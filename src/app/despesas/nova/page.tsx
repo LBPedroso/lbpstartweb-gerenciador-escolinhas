@@ -105,7 +105,7 @@ export default async function NovaDespesaPage({ searchParams }: NovaPageProps) {
             </label>
 
             <label className="block space-y-1">
-              <span className="text-sm text-slate-300">Valor (R$) <span className="text-rose-400">*</span></span>
+              <span className="text-sm text-slate-300">Valor total (R$) <span className="text-rose-400">*</span></span>
               <input
                 name="amount"
                 type="text"
@@ -114,6 +114,7 @@ export default async function NovaDespesaPage({ searchParams }: NovaPageProps) {
                 placeholder="Ex: 1.200,00"
                 className="h-10 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 text-sm text-slate-100 outline-none transition focus:border-emerald-400"
               />
+              <p className="text-xs text-slate-500">Se informar parcelas, este valor será dividido automaticamente.</p>
             </label>
           </div>
 
@@ -153,7 +154,7 @@ export default async function NovaDespesaPage({ searchParams }: NovaPageProps) {
             <p className="text-xs text-slate-500">Preencha se o status for Pago.</p>
           </label>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <label className="block space-y-1 sm:col-span-1">
               <span className="text-sm text-slate-300">Forma de pagamento</span>
               <select
@@ -182,20 +183,8 @@ export default async function NovaDespesaPage({ searchParams }: NovaPageProps) {
                 className="h-10 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 text-sm text-slate-100 outline-none transition focus:border-emerald-400"
               />
             </label>
-            <label className="block space-y-1">
-              <span className="text-sm text-slate-300">Parcela nº</span>
-              <input
-                name="installmentNumber"
-                type="number"
-                min="1"
-                max="48"
-                defaultValue={draft.installmentNumberRaw ?? ""}
-                placeholder="Ex: 1"
-                className="h-10 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 text-sm text-slate-100 outline-none transition focus:border-emerald-400"
-              />
-            </label>
           </div>
-          <p className="text-xs text-slate-500">Deixe parcelas em branco para pagamento à vista.</p>
+          <p className="text-xs text-slate-500">Ex: 1.600,00 com 3 parcelas gera automaticamente 1/3, 2/3 e 3/3 em meses sequenciais.</p>
 
           <label className="flex items-center gap-3 cursor-pointer">
             <input

@@ -61,6 +61,23 @@ function parsePositiveInt(value: string): number | null {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
+function addMonths(baseDate: Date, monthsToAdd: number) {
+  const date = new Date(baseDate);
+  date.setMonth(date.getMonth() + monthsToAdd);
+  return date;
+}
+
+function splitInstallmentsAmount(totalAmount: number, totalInstallments: number) {
+  const cents = Math.round(totalAmount * 100);
+  const baseCents = Math.floor(cents / totalInstallments);
+  const remainder = cents % totalInstallments;
+
+  return Array.from({ length: totalInstallments }, (_, index) => {
+    const installmentCents = baseCents + (index < remainder ? 1 : 0);
+    return installmentCents / 100;
+  });
+}
+
 function revalidateAll() {
   revalidatePath("/");
   revalidatePath("/despesas");
@@ -100,6 +117,10 @@ export async function createExpenseAction(formData: FormData) {
   const installments = parsePositiveInt(installmentsRaw);
   const installmentNumber = parsePositiveInt(installmentNumberRaw);
 
+  if (installmentNumber && !installments) {
+    errors.push("Para informar número da parcela, preencha também o total de parcelas.");
+  }
+
   if (installments && installmentNumber && installmentNumber > installments) {
     errors.push("Número da parcela não pode ser maior que o total de parcelas.");
   }
@@ -109,21 +130,45 @@ export async function createExpenseAction(formData: FormData) {
     redirect(`/despesas/nova?error=${encodeURIComponent(errors[0])}&draft=${draft}`);
   }
 
-  await prisma.expense.create({
-    data: {
-      description,
-      category: category!,
-      amount: new Prisma.Decimal(amount!),
-      dueDate: dueDate!,
-      status,
-      paymentDate: paymentDate ?? null,
-      expensePaymentMethod: expensePaymentMethod ?? null,
-      installments: installments ?? null,
-      installmentNumber: installmentNumber ?? null,
-      recurring,
-      note: note || null,
-    },
-  });
+  if (installments && installments > 1) {
+    const installmentAmounts = splitInstallmentsAmount(amount!, installments);
+
+    await prisma.$transaction(
+      installmentAmounts.map((installmentAmount, index) =>
+        prisma.expense.create({
+          data: {
+            description,
+            category: category!,
+            amount: new Prisma.Decimal(installmentAmount),
+            dueDate: addMonths(dueDate!, index),
+            status: status === ExpenseStatus.PAGO && index === 0 ? ExpenseStatus.PAGO : ExpenseStatus.PENDENTE,
+            paymentDate: status === ExpenseStatus.PAGO && index === 0 ? paymentDate ?? new Date() : null,
+            expensePaymentMethod: expensePaymentMethod ?? null,
+            installments,
+            installmentNumber: index + 1,
+            recurring,
+            note: note || null,
+          },
+        }),
+      ),
+    );
+  } else {
+    await prisma.expense.create({
+      data: {
+        description,
+        category: category!,
+        amount: new Prisma.Decimal(amount!),
+        dueDate: dueDate!,
+        status,
+        paymentDate: paymentDate ?? null,
+        expensePaymentMethod: expensePaymentMethod ?? null,
+        installments: installments ?? null,
+        installmentNumber: installmentNumber ?? null,
+        recurring,
+        note: note || null,
+      },
+    });
+  }
 
   revalidateAll();
 
