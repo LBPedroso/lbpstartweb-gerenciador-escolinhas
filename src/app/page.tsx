@@ -1,4 +1,4 @@
-import { PaymentMethod, PaymentStatus, ExpenseStatus } from "@prisma/client";
+import { ExpenseCategory, ExpenseStatus, PaymentMethod, PaymentStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
@@ -59,6 +59,35 @@ function addDays(value: Date, days: number) {
   const next = new Date(value);
   next.setDate(next.getDate() + days);
   return next;
+}
+
+function monthKeyFromDate(value: Date) {
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function monthLabelFromKey(key: string) {
+  const [yearRaw, monthRaw] = key.split("-");
+  const year = Number.parseInt(yearRaw, 10);
+  const month = Number.parseInt(monthRaw, 10);
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
+    return key;
+  }
+  return new Intl.DateTimeFormat("pt-BR", { month: "short", year: "2-digit" }).format(new Date(year, month - 1, 1));
+}
+
+function expenseCategoryLabel(category: ExpenseCategory) {
+  switch (category) {
+    case ExpenseCategory.ALUGUEL:
+      return "Aluguel";
+    case ExpenseCategory.PROFESSORES:
+      return "Professores";
+    case ExpenseCategory.MATERIAL:
+      return "Material";
+    case ExpenseCategory.OUTROS:
+      return "Outros";
+    default:
+      return "Outros";
+  }
 }
 
 function toCurrency(value: number) {
@@ -149,6 +178,11 @@ export default async function Home({ searchParams }: HomeProps) {
   const previousPeriodDays = diffDays(periodStart, periodEndExclusive);
   const previousPeriodEndExclusive = new Date(periodStart);
   const previousPeriodStart = addDays(previousPeriodEndExclusive, -previousPeriodDays);
+  const chartAnchorMonth = new Date(periodEndExclusive);
+  chartAnchorMonth.setDate(1);
+  chartAnchorMonth.setMonth(chartAnchorMonth.getMonth() - 1);
+  const chartStartMonth = new Date(chartAnchorMonth.getFullYear(), chartAnchorMonth.getMonth() - 5, 1);
+  const chartEndExclusive = new Date(chartAnchorMonth.getFullYear(), chartAnchorMonth.getMonth() + 1, 1);
 
   const [
     totalStudents,
@@ -163,6 +197,9 @@ export default async function Home({ searchParams }: HomeProps) {
     periodExpensesPaid,
     previousPeriodRevenue,
     previousPeriodExpenses,
+    monthlyRevenuePayments,
+    monthlyExpenseEntries,
+    periodExpensesByCategory,
   ] = await Promise.all([
     prisma.student.count(),
     prisma.payment.aggregate({
@@ -262,6 +299,43 @@ export default async function Home({ searchParams }: HomeProps) {
         },
       },
     }),
+    prisma.payment.findMany({
+      where: {
+        status: PaymentStatus.PAGO,
+        paymentDate: {
+          gte: chartStartMonth,
+          lt: chartEndExclusive,
+        },
+      },
+      select: {
+        amount: true,
+        paymentDate: true,
+      },
+    }),
+    prisma.expense.findMany({
+      where: {
+        dueDate: {
+          gte: chartStartMonth,
+          lt: chartEndExclusive,
+        },
+      },
+      select: {
+        amount: true,
+        dueDate: true,
+      },
+    }),
+    prisma.expense.findMany({
+      where: {
+        dueDate: {
+          gte: periodStart,
+          lt: periodEndExclusive,
+        },
+      },
+      select: {
+        category: true,
+        amount: true,
+      },
+    }),
   ]);
 
   const paidAmount = Number(paidCurrentMonth._sum.amount ?? 0);
@@ -274,6 +348,52 @@ export default async function Home({ searchParams }: HomeProps) {
   const periodNetAmount = periodRevenueAmount - periodExpensesAmount;
   const previousNetAmount = Number(previousPeriodRevenue._sum.amount ?? 0) - Number(previousPeriodExpenses._sum.amount ?? 0);
   const netVariation = periodNetAmount - previousNetAmount;
+
+  const monthKeys: string[] = [];
+  for (let offset = 5; offset >= 0; offset -= 1) {
+    const date = new Date(chartAnchorMonth.getFullYear(), chartAnchorMonth.getMonth() - offset, 1);
+    monthKeys.push(monthKeyFromDate(date));
+  }
+
+  const revenueByMonth = new Map<string, number>();
+  for (const payment of monthlyRevenuePayments) {
+    if (!payment.paymentDate) {
+      continue;
+    }
+    const key = monthKeyFromDate(payment.paymentDate);
+    revenueByMonth.set(key, (revenueByMonth.get(key) ?? 0) + Number(payment.amount));
+  }
+
+  const expenseByMonth = new Map<string, number>();
+  for (const expense of monthlyExpenseEntries) {
+    const key = monthKeyFromDate(expense.dueDate);
+    expenseByMonth.set(key, (expenseByMonth.get(key) ?? 0) + Number(expense.amount));
+  }
+
+  const monthlySeries = monthKeys.map((key) => ({
+    key,
+    label: monthLabelFromKey(key),
+    revenue: revenueByMonth.get(key) ?? 0,
+    expense: expenseByMonth.get(key) ?? 0,
+  }));
+
+  const maxMonthlyValue = Math.max(
+    1,
+    ...monthlySeries.map((item) => Math.max(item.revenue, item.expense)),
+  );
+
+  const categoryTotals = new Map<ExpenseCategory, number>();
+  for (const expense of periodExpensesByCategory) {
+    categoryTotals.set(
+      expense.category,
+      (categoryTotals.get(expense.category) ?? 0) + Number(expense.amount),
+    );
+  }
+
+  const categorySeries = Array.from(categoryTotals.entries())
+    .map(([category, total]) => ({ category, total }))
+    .sort((a, b) => b.total - a.total);
+  const maxCategoryValue = Math.max(1, ...categorySeries.map((item) => item.total));
 
   const monthOptions = MONTHS.map((item) => (
     <option key={item.value} value={item.value}>
@@ -451,6 +571,83 @@ export default async function Home({ searchParams }: HomeProps) {
               </p>
             </article>
           </div>
+        </section>
+
+        <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <article className="rounded-2xl border border-slate-700 bg-slate-900/90 p-5">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold">Receita x Despesa (últimos 6 meses)</h2>
+              <span className="text-xs text-slate-400">Base no período selecionado</span>
+            </div>
+            <div className="mt-4 overflow-x-auto">
+              <div className="min-w-[520px]">
+                <div className="grid h-52 grid-cols-6 gap-3 items-end">
+                  {monthlySeries.map((item) => {
+                    const revenueHeight = Math.max(4, Math.round((item.revenue / maxMonthlyValue) * 180));
+                    const expenseHeight = Math.max(4, Math.round((item.expense / maxMonthlyValue) * 180));
+
+                    return (
+                      <div key={item.key} className="flex flex-col items-center gap-2">
+                        <div className="flex items-end gap-1">
+                          <div
+                            className="w-4 rounded-t bg-emerald-400/90"
+                            style={{ height: `${revenueHeight}px` }}
+                            title={`Receita: ${toCurrency(item.revenue)}`}
+                          />
+                          <div
+                            className="w-4 rounded-t bg-rose-400/90"
+                            style={{ height: `${expenseHeight}px` }}
+                            title={`Despesa: ${toCurrency(item.expense)}`}
+                          />
+                        </div>
+                        <p className="text-[11px] text-slate-400">{item.label}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-3 flex items-center gap-4 text-xs text-slate-400">
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400/90" /> Receita
+                  </span>
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-rose-400/90" /> Despesa
+                  </span>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article className="rounded-2xl border border-slate-700 bg-slate-900/90 p-5">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold">Despesas por categoria</h2>
+              <span className="text-xs text-slate-400">{periodLabel}</span>
+            </div>
+            {categorySeries.length === 0 ? (
+              <p className="mt-6 rounded-xl border border-slate-700 bg-slate-950/50 p-4 text-sm text-slate-300">
+                Sem despesas para o período selecionado.
+              </p>
+            ) : (
+              <div className="mt-5 space-y-3">
+                {categorySeries.map((item) => {
+                  const width = Math.max(6, Math.round((item.total / maxCategoryValue) * 100));
+                  return (
+                    <div key={item.category} className="space-y-1">
+                      <div className="flex items-center justify-between text-sm text-slate-300">
+                        <span>{expenseCategoryLabel(item.category)}</span>
+                        <span className="font-medium text-slate-100">{toCurrency(item.total)}</span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-slate-800">
+                        <div
+                          className="h-2 rounded-full bg-cyan-400"
+                          style={{ width: `${width}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </article>
         </section>
 
         <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
