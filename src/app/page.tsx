@@ -1,4 +1,4 @@
-import { PaymentStatus, ExpenseStatus } from "@prisma/client";
+import { PaymentMethod, PaymentStatus, ExpenseStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
@@ -7,6 +7,25 @@ function toCurrency(value: number) {
     style: "currency",
     currency: "BRL",
   }).format(value);
+}
+
+function paymentMethodLabel(method: PaymentMethod) {
+  switch (method) {
+    case PaymentMethod.DINHEIRO:
+      return "Dinheiro";
+    case PaymentMethod.CARTAO:
+      return "Cartão";
+    case PaymentMethod.PIX:
+      return "PIX";
+    case PaymentMethod.TRANSFERENCIA:
+      return "Transferência";
+    case PaymentMethod.BANCO:
+      return "Banco";
+    case PaymentMethod.OUTRO:
+      return "Outro";
+    default:
+      return "-";
+  }
 }
 
 export default async function Home() {
@@ -94,7 +113,7 @@ export default async function Home() {
             <div>
               <p className="text-sm uppercase tracking-[0.25em] text-emerald-300">R Sports</p>
               <h1 className="mt-2 text-3xl font-bold">Dashboard Gerencial</h1>
-              <p className="mt-1 text-sm text-slate-300">Visao consolidada de alunos, receitas e despesas.</p>
+              <p className="mt-1 text-sm text-slate-300">Visão consolidada de alunos, receitas e despesas.</p>
             </div>
             <nav className="flex items-center gap-2 text-sm font-medium">
               <Link
@@ -109,6 +128,12 @@ export default async function Home() {
               >
                 Alunos
               </Link>
+              <Link
+                href="/pagamentos"
+                className="rounded-xl border border-slate-600 px-4 py-2 text-slate-200 transition hover:border-emerald-400/50 hover:text-emerald-200"
+              >
+                Pagamentos
+              </Link>
             </nav>
           </div>
         </header>
@@ -119,7 +144,7 @@ export default async function Home() {
             <p className="mt-2 text-4xl font-semibold text-emerald-300">{totalStudents}</p>
           </article>
           <article className="rounded-2xl border border-slate-700 bg-slate-900/90 p-5">
-            <p className="text-sm text-slate-400">Mensalidades recebidas (mes atual)</p>
+            <p className="text-sm text-slate-400">Mensalidades recebidas (mês atual)</p>
             <p className="mt-2 text-4xl font-semibold text-emerald-300">{toCurrency(paidAmount)}</p>
           </article>
           <article className="rounded-2xl border border-slate-700 bg-slate-900/90 p-5">
@@ -127,15 +152,15 @@ export default async function Home() {
             <p className="mt-2 text-4xl font-semibold text-amber-300">{overdueStudents}</p>
           </article>
           <article className="rounded-2xl border border-slate-700 bg-slate-900/90 p-5">
-            <p className="text-sm text-slate-400">Despesas (mes atual)</p>
+            <p className="text-sm text-slate-400">Despesas (mês atual)</p>
             <p className="mt-2 text-4xl font-semibold text-rose-300">{toCurrency(expenseAmount)}</p>
           </article>
           <article className="rounded-2xl border border-slate-700 bg-slate-900/90 p-5">
-            <p className="text-sm text-slate-400">Pendencias (7 dias)</p>
+            <p className="text-sm text-slate-400">Pendências (7 dias)</p>
             <p className="mt-2 text-4xl font-semibold text-amber-300">{toCurrency(pendingAmount)}</p>
           </article>
           <article className="rounded-2xl border border-slate-700 bg-slate-900/90 p-5">
-            <p className="text-sm text-slate-400">Saldo liquido do mes</p>
+            <p className="text-sm text-slate-400">Saldo líquido do mês</p>
             <p className={`mt-2 text-4xl font-semibold ${netAmount >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
               {toCurrency(netAmount)}
             </p>
@@ -144,7 +169,7 @@ export default async function Home() {
 
         <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
           <article className="rounded-2xl border border-slate-700 bg-slate-900/90 p-5">
-            <h2 className="text-lg font-semibold">Ultimos pagamentos registrados</h2>
+            <h2 className="text-lg font-semibold">Últimos pagamentos registrados</h2>
             <div className="mt-4 overflow-x-auto">
               <table className="w-full min-w-[520px] text-left text-sm">
                 <thead className="text-slate-400">
@@ -152,6 +177,7 @@ export default async function Home() {
                     <th className="pb-3">Aluno</th>
                     <th className="pb-3">Data</th>
                     <th className="pb-3">Valor</th>
+                    <th className="pb-3">Forma</th>
                     <th className="pb-3">Status</th>
                   </tr>
                 </thead>
@@ -165,6 +191,7 @@ export default async function Home() {
                           : "-"}
                       </td>
                       <td className="py-3">{toCurrency(Number(payment.amount))}</td>
+                      <td className="py-3">{paymentMethodLabel(payment.paymentMethod)}</td>
                       <td className="py-3">
                         <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-300">
                           {payment.status}
@@ -178,7 +205,7 @@ export default async function Home() {
           </article>
 
           <article className="rounded-2xl border border-slate-700 bg-slate-900/90 p-5">
-            <h2 className="text-lg font-semibold">Proximas contas a pagar</h2>
+            <h2 className="text-lg font-semibold">Próximas contas a pagar</h2>
             <div className="mt-4 overflow-x-auto">
               <table className="w-full min-w-[520px] text-left text-sm">
                 <thead className="text-slate-400">

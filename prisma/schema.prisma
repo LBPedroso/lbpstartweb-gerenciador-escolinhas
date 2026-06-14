@@ -17,6 +17,15 @@ enum PaymentStatus {
   PENDENTE
 }
 
+enum PaymentMethod {
+  DINHEIRO
+  CARTAO
+  PIX
+  TRANSFERENCIA
+  BANCO
+  OUTRO
+}
+
 enum ExpenseStatus {
   PAGO
   PENDENTE
@@ -66,6 +75,7 @@ model Payment {
   referenceMonth Int
   referenceYear  Int
   amount         Decimal
+  paymentMethod  PaymentMethod @default(PIX)
   paymentDate    DateTime?
   status         PaymentStatus @default(PENDENTE)
   note           String?

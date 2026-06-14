@@ -1,13 +1,26 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PaymentStatus } from "@prisma/client";
+import { PaymentMethod, PaymentStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { cancelPaymentAction, registerMonthlyPaymentAction } from "./actions";
 
 type StudentProfilePageProps = {
   params: Promise<{
     id: string;
   }>;
+  searchParams?: Promise<{
+    payment?: string | string[];
+    message?: string | string[];
+  }>;
 };
+
+function normalizeQuery(value: string | string[] | undefined) {
+  if (Array.isArray(value)) {
+    return value[0] ?? "";
+  }
+
+  return value ?? "";
+}
 
 function toCurrency(value: number) {
   return new Intl.NumberFormat("pt-BR", {
@@ -47,8 +60,30 @@ function referenceLabel(month: number, year: number) {
   }).format(new Date(year, month - 1, 1));
 }
 
-export default async function StudentProfilePage({ params }: StudentProfilePageProps) {
+function paymentMethodLabel(method: PaymentMethod | null | undefined) {
+  switch (method) {
+    case PaymentMethod.DINHEIRO:
+      return "Dinheiro";
+    case PaymentMethod.CARTAO:
+      return "Cartão";
+    case PaymentMethod.PIX:
+      return "PIX";
+    case PaymentMethod.TRANSFERENCIA:
+      return "Transferência";
+    case PaymentMethod.BANCO:
+      return "Banco";
+    case PaymentMethod.OUTRO:
+      return "Outro";
+    default:
+      return "-";
+  }
+}
+
+export default async function StudentProfilePage({ params, searchParams }: StudentProfilePageProps) {
   const { id } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const paymentFeedback = normalizeQuery(resolvedSearchParams?.payment);
+  const paymentMessage = normalizeQuery(resolvedSearchParams?.message);
 
   const student = await prisma.student.findUnique({
     where: { id },
@@ -91,9 +126,15 @@ export default async function StudentProfilePage({ params }: StudentProfilePageP
             <div>
               <p className="text-sm uppercase tracking-[0.25em] text-emerald-300">R Sports</p>
               <h1 className="mt-2 text-3xl font-bold">Ficha do Aluno</h1>
-              <p className="mt-1 text-sm text-slate-300">Visao completa do cadastro e financeiro do aluno.</p>
+              <p className="mt-1 text-sm text-slate-300">Visão completa do cadastro e financeiro do aluno.</p>
             </div>
             <div className="flex items-center gap-2 text-sm font-medium">
+              <Link
+                href="/"
+                className="rounded-xl border border-slate-600 px-4 py-2 text-slate-200 transition hover:border-emerald-400/50 hover:text-emerald-200"
+              >
+                Dashboard
+              </Link>
               <Link
                 href="/alunos"
                 className="rounded-xl border border-slate-600 px-4 py-2 text-slate-200 transition hover:border-emerald-400/50 hover:text-emerald-200"
@@ -114,7 +155,7 @@ export default async function StudentProfilePage({ params }: StudentProfilePageP
           <article className="rounded-2xl border border-slate-700 bg-slate-900/90 p-5 lg:col-span-1">
             <h2 className="text-xl font-semibold">{student.fullName}</h2>
             <p className="mt-1 text-sm text-slate-300">
-              {age !== null ? `${age} anos` : "Idade nao informada"}
+              {age !== null ? `${age} anos` : "Idade não informada"}
             </p>
             <div className="mt-4 space-y-2 text-sm text-slate-300">
               <p>
@@ -130,16 +171,16 @@ export default async function StudentProfilePage({ params }: StudentProfilePageP
                 <span className="text-slate-400">Categoria:</span> {student.category ?? "-"}
               </p>
               <p>
-                <span className="text-slate-400">Posicao:</span> {student.primaryPosition ?? "-"}
+                <span className="text-slate-400">Posição:</span> {student.primaryPosition ?? "-"}
               </p>
             </div>
           </article>
 
           <article className="rounded-2xl border border-slate-700 bg-slate-900/90 p-5 lg:col-span-1">
-            <h3 className="text-lg font-semibold">Responsaveis</h3>
+            <h3 className="text-lg font-semibold">Responsáveis</h3>
             <div className="mt-4 space-y-4 text-sm text-slate-300">
               <div>
-                <p className="text-slate-400">Mae</p>
+                <p className="text-slate-400">Mãe</p>
                 <p className="font-medium text-slate-100">{student.motherName ?? "-"}</p>
                 <p>{student.motherPhone ?? "-"}</p>
               </div>
@@ -149,7 +190,7 @@ export default async function StudentProfilePage({ params }: StudentProfilePageP
                 <p>{student.fatherPhone ?? "-"}</p>
               </div>
               <div>
-                <p className="text-slate-400">Endereco</p>
+                <p className="text-slate-400">Endereço</p>
                 <p>{student.address ?? "-"}</p>
               </div>
             </div>
@@ -159,7 +200,7 @@ export default async function StudentProfilePage({ params }: StudentProfilePageP
             <h3 className="text-lg font-semibold">Resumo financeiro</h3>
             <div className="mt-4 space-y-3 text-sm">
               <p className="text-slate-300">
-                <span className="text-slate-400">Status do mes:</span>{" "}
+                <span className="text-slate-400">Status do mês:</span>{" "}
                 <span
                   className={`rounded-full px-2 py-1 text-xs font-semibold ${
                     statusCurrentMonth === PaymentStatus.PAGO
@@ -177,14 +218,79 @@ export default async function StudentProfilePage({ params }: StudentProfilePageP
                 <span className="text-slate-400">Data do pagamento:</span> {toDate(currentPayment?.paymentDate)}
               </p>
               <p className="text-slate-300">
-                <span className="text-slate-400">Proximo vencimento:</span> {toDate(nextDueDate)}
+                <span className="text-slate-400">Forma de pagamento:</span> {paymentMethodLabel(currentPayment?.paymentMethod)}
               </p>
+              <p className="text-slate-300">
+                <span className="text-slate-400">Próximo vencimento:</span> {toDate(nextDueDate)}
+              </p>
+
+              <form action={registerMonthlyPaymentAction} className="mt-4 space-y-3 rounded-xl border border-slate-700 bg-slate-950/50 p-3">
+                <input type="hidden" name="studentId" value={student.id} />
+                <p className="text-xs text-slate-400">Registrar pagamento de {referenceLabel(currentMonth, currentYear)}</p>
+                <label className="block space-y-1">
+                  <span className="text-xs text-slate-400">Valor pago</span>
+                  <input
+                    name="amount"
+                    type="text"
+                    defaultValue={monthlyAmount.toFixed(2).replace(".", ",")}
+                    className="h-10 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 text-sm text-slate-100 outline-none transition focus:border-emerald-400"
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <span className="text-xs text-slate-400">Forma de pagamento</span>
+                  <select
+                    name="paymentMethod"
+                    defaultValue={currentPayment?.paymentMethod ?? PaymentMethod.PIX}
+                    className="h-10 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 text-sm text-slate-100 outline-none transition focus:border-emerald-400"
+                  >
+                    <option value={PaymentMethod.DINHEIRO}>Dinheiro</option>
+                    <option value={PaymentMethod.CARTAO}>Cartão</option>
+                    <option value={PaymentMethod.PIX}>PIX</option>
+                    <option value={PaymentMethod.TRANSFERENCIA}>Transferência</option>
+                    <option value={PaymentMethod.BANCO}>Banco</option>
+                    <option value={PaymentMethod.OUTRO}>Outro</option>
+                  </select>
+                </label>
+                <label className="block space-y-1">
+                  <span className="text-xs text-slate-400">Observacao (opcional)</span>
+                  <input
+                    name="note"
+                    type="text"
+                    placeholder="Ex: pago via PIX"
+                    className="h-10 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 text-sm text-slate-100 outline-none transition focus:border-emerald-400"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="h-10 w-full rounded-lg bg-emerald-500 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
+                >
+                  Registrar pagamento
+                </button>
+              </form>
             </div>
           </article>
         </section>
 
+        {paymentFeedback === "success" ? (
+          <p className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-200">
+            Pagamento registrado com sucesso para este mês.
+          </p>
+        ) : null}
+
+        {paymentFeedback === "cancelled" ? (
+          <p className="rounded-xl border border-slate-500/30 bg-slate-500/10 p-4 text-sm text-slate-200">
+            Pagamento cancelado e removido do histórico.
+          </p>
+        ) : null}
+
+        {paymentFeedback === "error" ? (
+          <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-200">
+            {paymentMessage || "Não foi possível registrar o pagamento."}
+          </p>
+        ) : null}
+
         <section className="rounded-2xl border border-slate-700 bg-slate-900/90 p-5">
-          <h3 className="text-lg font-semibold">Historico de pagamentos (ultimos 6)</h3>
+          <h3 className="text-lg font-semibold">Histórico de pagamentos (últimos 6)</h3>
 
           {student.payments.length === 0 ? (
             <p className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">
@@ -195,10 +301,12 @@ export default async function StudentProfilePage({ params }: StudentProfilePageP
               <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="text-slate-400">
                   <tr>
-                    <th className="pb-3">Referencia</th>
+                    <th className="pb-3">Referência</th>
                     <th className="pb-3">Valor</th>
+                    <th className="pb-3">Forma</th>
                     <th className="pb-3">Status</th>
                     <th className="pb-3">Data do pagamento</th>
+                    <th className="pb-3">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -206,6 +314,7 @@ export default async function StudentProfilePage({ params }: StudentProfilePageP
                     <tr key={payment.id} className="border-t border-slate-800">
                       <td className="py-3 text-slate-200">{referenceLabel(payment.referenceMonth, payment.referenceYear)}</td>
                       <td className="py-3 text-slate-200">{toCurrency(Number(payment.amount))}</td>
+                      <td className="py-3 text-slate-300">{paymentMethodLabel(payment.paymentMethod)}</td>
                       <td className="py-3">
                         <span
                           className={`rounded-full px-3 py-1 text-xs font-semibold ${
@@ -218,6 +327,18 @@ export default async function StudentProfilePage({ params }: StudentProfilePageP
                         </span>
                       </td>
                       <td className="py-3 text-slate-300">{toDate(payment.paymentDate)}</td>
+                      <td className="py-3">
+                        <form action={cancelPaymentAction}>
+                          <input type="hidden" name="paymentId" value={payment.id} />
+                          <input type="hidden" name="studentId" value={student.id} />
+                          <button
+                            type="submit"
+                            className="rounded-lg border border-rose-500/40 px-3 py-1 text-xs font-medium text-rose-400 transition hover:border-rose-400 hover:text-rose-300"
+                          >
+                            Cancelar
+                          </button>
+                        </form>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -1,11 +1,10 @@
-import { Prisma, PrismaClient, ExpenseCategory, ExpenseStatus, PaymentStatus } from "@prisma/client";
+import { Prisma, PrismaClient, ExpenseCategory, ExpenseStatus, PaymentStatus, PaymentMethod } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 async function main() {
   await prisma.payment.deleteMany();
   await prisma.expense.deleteMany();
-  await prisma.student.deleteMany();
 
   await prisma.adminUser.upsert({
     where: { email: "admin@rsports.local" },
@@ -17,8 +16,22 @@ async function main() {
     },
   });
 
-  const gabriel = await prisma.student.create({
-    data: {
+  const gabriel = await prisma.student.upsert({
+    where: { cpf: "49223656378" },
+    update: {
+      fullName: "Gabriel Silva Martins",
+      birthDate: new Date("2014-05-15"),
+      studentPhone: "11912345678",
+      address: "Rua Turiassu, 123 - Perdizes",
+      motherName: "Carla Silva",
+      motherPhone: "11987654321",
+      fatherName: "Marcos Martins",
+      fatherPhone: "11977775555",
+      category: "Sub-13 - Verde",
+      primaryPosition: "Goleiro - Azul",
+      photoUrl: "/students/gabriel.jpg",
+    },
+    create: {
       fullName: "Gabriel Silva Martins",
       birthDate: new Date("2014-05-15"),
       cpf: "49223656378",
@@ -34,8 +47,22 @@ async function main() {
     },
   });
 
-  const lucas = await prisma.student.create({
-    data: {
+  const lucas = await prisma.student.upsert({
+    where: { cpf: "50112478091" },
+    update: {
+      fullName: "Lucas Souza",
+      birthDate: new Date("2013-09-02"),
+      studentPhone: "11922223333",
+      address: "Rua das Palmeiras, 55 - Pompeia",
+      motherName: "Eliana Souza",
+      motherPhone: "11990001111",
+      fatherName: "Paulo Souza",
+      fatherPhone: "11998887777",
+      category: "Sub-13 - Verde",
+      primaryPosition: "Fixo - Azul",
+      photoUrl: "/students/lucas.jpg",
+    },
+    create: {
       fullName: "Lucas Souza",
       birthDate: new Date("2013-09-02"),
       cpf: "50112478091",
@@ -51,8 +78,22 @@ async function main() {
     },
   });
 
-  const ana = await prisma.student.create({
-    data: {
+  const ana = await prisma.student.upsert({
+    where: { cpf: "34511988002" },
+    update: {
+      fullName: "Ana Costa",
+      birthDate: new Date("2015-01-20"),
+      studentPhone: "11933334444",
+      address: "Av. Sumaré, 450 - Perdizes",
+      motherName: "Juliana Costa",
+      motherPhone: "11995556666",
+      fatherName: "Rafael Costa",
+      fatherPhone: "11994443322",
+      category: "Sub-11 - Amarelo",
+      primaryPosition: "Ala - Verde",
+      photoUrl: "/students/ana.jpg",
+    },
+    create: {
       fullName: "Ana Costa",
       birthDate: new Date("2015-01-20"),
       cpf: "34511988002",
@@ -79,6 +120,7 @@ async function main() {
         referenceMonth: month,
         referenceYear: year,
         amount: new Prisma.Decimal(150),
+        paymentMethod: PaymentMethod.PIX,
         paymentDate: new Date(),
         status: PaymentStatus.PAGO,
         note: "Mensalidade paga via PIX",
@@ -88,6 +130,7 @@ async function main() {
         referenceMonth: month,
         referenceYear: year,
         amount: new Prisma.Decimal(150),
+        paymentMethod: PaymentMethod.CARTAO,
         paymentDate: new Date(),
         status: PaymentStatus.PAGO,
       },
@@ -96,6 +139,7 @@ async function main() {
         referenceMonth: month,
         referenceYear: year,
         amount: new Prisma.Decimal(150),
+        paymentMethod: PaymentMethod.PIX,
         paymentDate: null,
         status: PaymentStatus.PENDENTE,
       },

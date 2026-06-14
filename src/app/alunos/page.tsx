@@ -105,7 +105,7 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
             <div>
               <p className="text-sm uppercase tracking-[0.25em] text-emerald-300">R Sports</p>
               <h1 className="mt-2 text-3xl font-bold">Lista de Alunos</h1>
-              <p className="mt-1 text-sm text-slate-300">Busca rapida por nome para operacao diaria da escolinha.</p>
+              <p className="mt-1 text-sm text-slate-300">Busca rápida por nome para operação diária da escolinha.</p>
             </div>
             <nav className="flex items-center gap-2 text-sm font-medium">
               <Link
@@ -119,6 +119,12 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
                 className="rounded-xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-2 text-emerald-200"
               >
                 Alunos
+              </Link>
+              <Link
+                href="/pagamentos"
+                className="rounded-xl border border-slate-600 px-4 py-2 text-slate-200 transition hover:border-emerald-400/50 hover:text-emerald-200"
+              >
+                Pagamentos
               </Link>
             </nav>
           </div>
@@ -191,11 +197,11 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
                 <thead className="text-slate-400">
                   <tr>
                     <th className="pb-3">Nome</th>
-                    <th className="pb-3">Responsaveis</th>
+                    <th className="pb-3">Responsáveis</th>
                     <th className="pb-3">Categoria</th>
                     <th className="pb-3">Telefone</th>
                     <th className="pb-3">Cadastro</th>
-                    <th className="pb-3">Acoes</th>
+                    <th className="pb-3">Ações</th>
                   </tr>
                 </thead>
                 <tbody>

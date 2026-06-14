@@ -91,7 +91,7 @@ export default async function EditStudentPage({ params, searchParams }: EditStud
 
         <section className="rounded-2xl border border-slate-700 bg-slate-900/90 p-5">
           <p className="mb-4 text-sm text-slate-300">
-            Campos obrigatorios: nome, data de nascimento, categoria e ao menos um responsavel com telefone.
+            Campos obrigatórios: nome, data de nascimento, categoria e ao menos um responsável com telefone.
           </p>
 
           <form action={updateStudentAction} className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -151,7 +151,7 @@ export default async function EditStudentPage({ params, searchParams }: EditStud
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm text-slate-300">Nome da mae</span>
+              <span className="text-sm text-slate-300">Nome da mãe</span>
               <input
                 name="motherName"
                 type="text"
@@ -161,7 +161,7 @@ export default async function EditStudentPage({ params, searchParams }: EditStud
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm text-slate-300">Telefone da mae</span>
+              <span className="text-sm text-slate-300">Telefone da mãe</span>
               <input
                 name="motherPhone"
                 type="text"
@@ -191,7 +191,7 @@ export default async function EditStudentPage({ params, searchParams }: EditStud
             </label>
 
             <label className="space-y-2 md:col-span-2">
-              <span className="text-sm text-slate-300">Endereco</span>
+              <span className="text-sm text-slate-300">Endereço</span>
               <input
                 name="address"
                 type="text"
@@ -201,7 +201,7 @@ export default async function EditStudentPage({ params, searchParams }: EditStud
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm text-slate-300">Posicao primaria</span>
+              <span className="text-sm text-slate-300">Posição primária</span>
               <input
                 name="primaryPosition"
                 type="text"
@@ -225,7 +225,7 @@ export default async function EditStudentPage({ params, searchParams }: EditStud
                 type="submit"
                 className="h-11 rounded-xl bg-emerald-500 px-6 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
               >
-                Salvar alteracoes
+                Salvar alterações
               </button>
               <Link
                 href="/alunos"

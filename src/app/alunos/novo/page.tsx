@@ -46,7 +46,7 @@ export default async function NewStudentPage({ searchParams }: NewStudentPagePro
             <div>
               <p className="text-sm uppercase tracking-[0.25em] text-emerald-300">R Sports</p>
               <h1 className="mt-2 text-3xl font-bold">Novo Aluno</h1>
-              <p className="mt-1 text-sm text-slate-300">Cadastro simples para nao travar a operacao diaria.</p>
+              <p className="mt-1 text-sm text-slate-300">Cadastro simples para não travar a operação diária.</p>
             </div>
             <Link
               href="/alunos"
@@ -65,7 +65,7 @@ export default async function NewStudentPage({ searchParams }: NewStudentPagePro
 
         <section className="rounded-2xl border border-slate-700 bg-slate-900/90 p-5">
           <p className="mb-4 text-sm text-slate-300">
-            Campos obrigatorios: nome, data de nascimento, categoria e ao menos um responsavel com telefone.
+            Campos obrigatórios: nome, data de nascimento, categoria e ao menos um responsável com telefone.
           </p>
           <form action={createStudentAction} className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <label className="space-y-2 md:col-span-2">
@@ -125,7 +125,7 @@ export default async function NewStudentPage({ searchParams }: NewStudentPagePro
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm text-slate-300">Nome da mae</span>
+              <span className="text-sm text-slate-300">Nome da mãe</span>
               <input
                 name="motherName"
                 type="text"
@@ -135,7 +135,7 @@ export default async function NewStudentPage({ searchParams }: NewStudentPagePro
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm text-slate-300">Telefone da mae</span>
+              <span className="text-sm text-slate-300">Telefone da mãe</span>
               <input
                 name="motherPhone"
                 type="text"
@@ -165,7 +165,7 @@ export default async function NewStudentPage({ searchParams }: NewStudentPagePro
             </label>
 
             <label className="space-y-2 md:col-span-2">
-              <span className="text-sm text-slate-300">Endereco</span>
+              <span className="text-sm text-slate-300">Endereço</span>
               <input
                 name="address"
                 type="text"
@@ -175,7 +175,7 @@ export default async function NewStudentPage({ searchParams }: NewStudentPagePro
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm text-slate-300">Posicao primaria</span>
+              <span className="text-sm text-slate-300">Posição primária</span>
               <input
                 name="primaryPosition"
                 type="text"
