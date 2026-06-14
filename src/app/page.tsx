@@ -420,6 +420,12 @@ export default async function Home({ searchParams }: HomeProps) {
             </div>
             <nav className="flex items-center gap-2 text-sm font-medium">
               <Link
+                href="/?capa=1"
+                className="rounded-xl border border-orange-400/40 bg-orange-500/10 px-4 py-2 text-orange-200 transition hover:border-orange-300 hover:bg-orange-500/20"
+              >
+                Ver capa
+              </Link>
+              <Link
                 href="/"
                 className="rounded-xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-2 text-emerald-200"
               >
