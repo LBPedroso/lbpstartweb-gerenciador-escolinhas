@@ -29,6 +29,16 @@ export function CoverGate({ children }: CoverGateProps) {
 
   function enterSystem() {
     setVisible(false);
+
+    if (typeof window !== "undefined") {
+      const currentUrl = new URL(window.location.href);
+      if (currentUrl.searchParams.has("capa")) {
+        currentUrl.searchParams.delete("capa");
+        const cleanUrl = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
+        window.history.replaceState({}, "", cleanUrl || "/");
+      }
+    }
+
     try {
       window.localStorage.setItem(COVER_KEY, "1");
     } catch {
