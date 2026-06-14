@@ -79,6 +79,19 @@ function paymentMethodLabel(method: PaymentMethod | null | undefined) {
   }
 }
 
+function studentInitials(fullName: string) {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+
+  if (parts.length === 0) {
+    return "RS";
+  }
+
+  const first = parts[0]?.[0] ?? "R";
+  const second = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? "S" : parts[0]?.[1] ?? "S";
+
+  return `${first}${second}`.toUpperCase();
+}
+
 const MONTHS = [
   { value: 1, label: "Janeiro" },
   { value: 2, label: "Fevereiro" },
@@ -137,6 +150,7 @@ export default async function StudentProfilePage({ params, searchParams }: Stude
   }
 
   const age = calculateAge(student.birthDate);
+  const studentPhotoUrl = student.photoUrl?.trim();
 
   return (
     <main className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100 sm:px-6 lg:px-10">
@@ -173,6 +187,24 @@ export default async function StudentProfilePage({ params, searchParams }: Stude
 
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <article className="rounded-2xl border border-slate-700 bg-slate-900/90 p-5 lg:col-span-1">
+            <div className="mb-4 flex items-center gap-4">
+              {studentPhotoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={studentPhotoUrl}
+                  alt={`Foto de ${student.fullName}`}
+                  className="h-20 w-20 rounded-2xl border border-slate-600 object-cover"
+                />
+              ) : (
+                <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-slate-600 bg-slate-950 text-lg font-bold text-emerald-300">
+                  {studentInitials(student.fullName)}
+                </div>
+              )}
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Foto / Avatar</p>
+                <p className="text-sm text-slate-300">{studentPhotoUrl ? "Foto cadastrada" : "Sem foto cadastrada"}</p>
+              </div>
+            </div>
             <h2 className="text-xl font-semibold">{student.fullName}</h2>
             <p className="mt-1 text-sm text-slate-300">
               {age !== null ? `${age} anos` : "Idade não informada"}

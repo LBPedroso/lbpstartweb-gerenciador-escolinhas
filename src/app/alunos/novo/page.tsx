@@ -186,14 +186,15 @@ export default async function NewStudentPage({ searchParams }: NewStudentPagePro
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm text-slate-300">URL da foto</span>
+              <span className="text-sm text-slate-300">URL da foto do aluno</span>
               <input
                 name="photoUrl"
                 type="text"
-                placeholder="/students/nome.jpg"
+                placeholder="Cole aqui um link da imagem ou caminho local"
                 defaultValue={draftValue(draft, "photoUrl")}
                 className="h-11 w-full rounded-xl border border-slate-600 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition focus:border-emerald-400"
               />
+              <p className="text-xs text-slate-400">Opcional. Se deixar vazio, a ficha mostra um avatar com as iniciais.</p>
             </label>
 
             <div className="md:col-span-2 flex flex-wrap items-center gap-3 pt-2">
