@@ -131,6 +131,12 @@ export default async function PagamentosPage({ searchParams }: PagamentosPagePro
               >
                 Alunos
               </Link>
+              <Link
+                href="/despesas"
+                className="rounded-xl border border-slate-600 px-4 py-2 text-slate-200 transition hover:border-emerald-400/50 hover:text-emerald-200"
+              >
+                Despesas
+              </Link>
             </div>
           </div>
         </header>
