@@ -2,6 +2,65 @@ import { PaymentMethod, PaymentStatus, ExpenseStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
+type HomeProps = {
+  searchParams?: Promise<{
+    mode?: string | string[];
+    ano?: string | string[];
+    mes?: string | string[];
+    inicio?: string | string[];
+    fim?: string | string[];
+  }>;
+};
+
+const MONTHS = [
+  { value: 1, label: "Janeiro" },
+  { value: 2, label: "Fevereiro" },
+  { value: 3, label: "Março" },
+  { value: 4, label: "Abril" },
+  { value: 5, label: "Maio" },
+  { value: 6, label: "Junho" },
+  { value: 7, label: "Julho" },
+  { value: 8, label: "Agosto" },
+  { value: 9, label: "Setembro" },
+  { value: 10, label: "Outubro" },
+  { value: 11, label: "Novembro" },
+  { value: 12, label: "Dezembro" },
+] as const;
+
+function normalizeQuery(value: string | string[] | undefined) {
+  if (Array.isArray(value)) {
+    return value[0] ?? "";
+  }
+
+  return value ?? "";
+}
+
+function toInputDate(value: Date) {
+  return value.toISOString().slice(0, 10);
+}
+
+function parseInputDate(value: string) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(`${value}T00:00:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function diffDays(start: Date, endExclusive: Date) {
+  const msPerDay = 1000 * 60 * 60 * 24;
+  return Math.max(1, Math.round((endExclusive.getTime() - start.getTime()) / msPerDay));
+}
+
+function addDays(value: Date, days: number) {
+  const next = new Date(value);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
 function toCurrency(value: number) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -28,16 +87,68 @@ function paymentMethodLabel(method: PaymentMethod) {
   }
 }
 
-export default async function Home() {
+export default async function Home({ searchParams }: HomeProps) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const now = new Date();
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
+  const periodModeRaw = normalizeQuery(resolvedSearchParams?.mode);
+  const periodMode =
+    periodModeRaw === "anual" || periodModeRaw === "personalizado" || periodModeRaw === "mensal"
+      ? periodModeRaw
+      : "mensal";
+
+  const selectedYear = Number.parseInt(normalizeQuery(resolvedSearchParams?.ano), 10);
+  const safeSelectedYear = Number.isInteger(selectedYear) && selectedYear >= 2020 && selectedYear <= 2100
+    ? selectedYear
+    : currentYear;
+
+  const selectedMonth = Number.parseInt(normalizeQuery(resolvedSearchParams?.mes), 10);
+  const safeSelectedMonth = Number.isInteger(selectedMonth) && selectedMonth >= 1 && selectedMonth <= 12
+    ? selectedMonth
+    : currentMonth;
+
+  const customStartRaw = normalizeQuery(resolvedSearchParams?.inicio);
+  const customEndRaw = normalizeQuery(resolvedSearchParams?.fim);
+
+  const fallbackStart = new Date(currentYear, now.getMonth(), 1);
+  const fallbackEndExclusive = new Date(currentYear, now.getMonth() + 1, 1);
+
+  let periodStart = fallbackStart;
+  let periodEndExclusive = fallbackEndExclusive;
+  let periodLabel = "Mês atual";
+
+  if (periodMode === "anual") {
+    periodStart = new Date(safeSelectedYear, 0, 1);
+    periodEndExclusive = new Date(safeSelectedYear + 1, 0, 1);
+    periodLabel = `Ano ${safeSelectedYear}`;
+  } else if (periodMode === "personalizado") {
+    const customStart = parseInputDate(customStartRaw);
+    const customEnd = parseInputDate(customEndRaw);
+
+    if (customStart && customEnd && customStart <= customEnd) {
+      periodStart = customStart;
+      periodEndExclusive = addDays(customEnd, 1);
+      periodLabel = `${new Intl.DateTimeFormat("pt-BR").format(customStart)} a ${new Intl.DateTimeFormat("pt-BR").format(customEnd)}`;
+    } else {
+      periodLabel = "Período personalizado inválido (usando mês atual)";
+    }
+  } else {
+    periodStart = new Date(safeSelectedYear, safeSelectedMonth - 1, 1);
+    periodEndExclusive = new Date(safeSelectedYear, safeSelectedMonth, 1);
+    const monthName = MONTHS.find((item) => item.value === safeSelectedMonth)?.label ?? "";
+    periodLabel = `${monthName} de ${safeSelectedYear}`;
+  }
+
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
   const sevenDaysAhead = new Date(todayStart);
   sevenDaysAhead.setDate(sevenDaysAhead.getDate() + 7);
   const monthStart = new Date(currentYear, now.getMonth(), 1);
   const monthEnd = new Date(currentYear, now.getMonth() + 1, 1);
+  const previousPeriodDays = diffDays(periodStart, periodEndExclusive);
+  const previousPeriodEndExclusive = new Date(periodStart);
+  const previousPeriodStart = addDays(previousPeriodEndExclusive, -previousPeriodDays);
 
   const [
     totalStudents,
@@ -47,6 +158,11 @@ export default async function Home() {
     pending7Days,
     recentPayments,
     upcomingExpenses,
+    periodRevenue,
+    periodExpenses,
+    periodExpensesPaid,
+    previousPeriodRevenue,
+    previousPeriodExpenses,
   ] = await Promise.all([
     prisma.student.count(),
     prisma.payment.aggregate({
@@ -98,12 +214,77 @@ export default async function Home() {
       orderBy: { dueDate: "asc" },
       take: 5,
     }),
+    prisma.payment.aggregate({
+      _sum: { amount: true },
+      where: {
+        status: PaymentStatus.PAGO,
+        paymentDate: {
+          gte: periodStart,
+          lt: periodEndExclusive,
+        },
+      },
+    }),
+    prisma.expense.aggregate({
+      _sum: { amount: true },
+      where: {
+        dueDate: {
+          gte: periodStart,
+          lt: periodEndExclusive,
+        },
+      },
+    }),
+    prisma.expense.aggregate({
+      _sum: { amount: true },
+      where: {
+        status: ExpenseStatus.PAGO,
+        paymentDate: {
+          gte: periodStart,
+          lt: periodEndExclusive,
+        },
+      },
+    }),
+    prisma.payment.aggregate({
+      _sum: { amount: true },
+      where: {
+        status: PaymentStatus.PAGO,
+        paymentDate: {
+          gte: previousPeriodStart,
+          lt: previousPeriodEndExclusive,
+        },
+      },
+    }),
+    prisma.expense.aggregate({
+      _sum: { amount: true },
+      where: {
+        dueDate: {
+          gte: previousPeriodStart,
+          lt: previousPeriodEndExclusive,
+        },
+      },
+    }),
   ]);
 
   const paidAmount = Number(paidCurrentMonth._sum.amount ?? 0);
   const expenseAmount = Number(currentMonthExpenses._sum.amount ?? 0);
   const pendingAmount = Number(pending7Days._sum.amount ?? 0);
   const netAmount = paidAmount - expenseAmount;
+  const periodRevenueAmount = Number(periodRevenue._sum.amount ?? 0);
+  const periodExpensesAmount = Number(periodExpenses._sum.amount ?? 0);
+  const periodExpensesPaidAmount = Number(periodExpensesPaid._sum.amount ?? 0);
+  const periodNetAmount = periodRevenueAmount - periodExpensesAmount;
+  const previousNetAmount = Number(previousPeriodRevenue._sum.amount ?? 0) - Number(previousPeriodExpenses._sum.amount ?? 0);
+  const netVariation = periodNetAmount - previousNetAmount;
+
+  const monthOptions = MONTHS.map((item) => (
+    <option key={item.value} value={item.value}>
+      {item.label}
+    </option>
+  ));
+
+  const years: number[] = [];
+  for (let year = currentYear - 4; year <= currentYear + 1; year += 1) {
+    years.push(year);
+  }
 
   return (
     <main className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100 sm:px-6 lg:px-10">
@@ -171,6 +352,105 @@ export default async function Home() {
               {toCurrency(netAmount)}
             </p>
           </article>
+        </section>
+
+        <section className="rounded-2xl border border-cyan-400/20 bg-slate-900/90 p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold">Receitas x Despesas por Período</h2>
+              <p className="mt-1 text-sm text-slate-300">Análise em visão mensal, anual ou intervalo personalizado.</p>
+            </div>
+            <p className="rounded-lg border border-slate-700 px-3 py-1 text-sm text-slate-300">{periodLabel}</p>
+          </div>
+
+          <form method="GET" className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-5">
+            <label className="space-y-1">
+              <span className="text-xs text-slate-400">Modo</span>
+              <select
+                name="mode"
+                defaultValue={periodMode}
+                className="h-10 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 text-sm outline-none transition focus:border-emerald-400"
+              >
+                <option value="mensal">Mensal</option>
+                <option value="anual">Anual</option>
+                <option value="personalizado">Personalizado</option>
+              </select>
+            </label>
+            <label className="space-y-1">
+              <span className="text-xs text-slate-400">Mês (modo mensal)</span>
+              <select
+                name="mes"
+                defaultValue={safeSelectedMonth}
+                className="h-10 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 text-sm outline-none transition focus:border-emerald-400"
+              >
+                {monthOptions}
+              </select>
+            </label>
+            <label className="space-y-1">
+              <span className="text-xs text-slate-400">Ano</span>
+              <select
+                name="ano"
+                defaultValue={safeSelectedYear}
+                className="h-10 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 text-sm outline-none transition focus:border-emerald-400"
+              >
+                {years.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="space-y-1">
+              <span className="text-xs text-slate-400">Início (personalizado)</span>
+              <input
+                type="date"
+                name="inicio"
+                defaultValue={customStartRaw || toInputDate(fallbackStart)}
+                className="h-10 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 text-sm outline-none transition focus:border-emerald-400"
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-xs text-slate-400">Fim (personalizado)</span>
+              <input
+                type="date"
+                name="fim"
+                defaultValue={customEndRaw || toInputDate(addDays(fallbackEndExclusive, -1))}
+                className="h-10 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 text-sm outline-none transition focus:border-emerald-400"
+              />
+            </label>
+            <div className="md:col-span-5">
+              <button
+                type="submit"
+                className="h-10 rounded-lg bg-emerald-500 px-5 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
+              >
+                Aplicar período
+              </button>
+            </div>
+          </form>
+
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <article className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4">
+              <p className="text-xs uppercase tracking-widest text-slate-400">Receita no período</p>
+              <p className="mt-2 text-2xl font-bold text-emerald-300">{toCurrency(periodRevenueAmount)}</p>
+            </article>
+            <article className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4">
+              <p className="text-xs uppercase tracking-widest text-slate-400">Despesa prevista</p>
+              <p className="mt-2 text-2xl font-bold text-rose-300">{toCurrency(periodExpensesAmount)}</p>
+            </article>
+            <article className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4">
+              <p className="text-xs uppercase tracking-widest text-slate-400">Despesa paga</p>
+              <p className="mt-2 text-2xl font-bold text-amber-300">{toCurrency(periodExpensesPaidAmount)}</p>
+            </article>
+            <article className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4">
+              <p className="text-xs uppercase tracking-widest text-slate-400">Saldo do período</p>
+              <p className={`mt-2 text-2xl font-bold ${periodNetAmount >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
+                {toCurrency(periodNetAmount)}
+              </p>
+              <p className={`mt-1 text-xs ${netVariation >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
+                Variação vs período anterior: {netVariation >= 0 ? "+" : ""}{toCurrency(netVariation)}
+              </p>
+            </article>
+          </div>
         </section>
 
         <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
