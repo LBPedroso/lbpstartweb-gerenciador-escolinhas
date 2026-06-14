@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ExpenseCategory, ExpenseStatus } from "@prisma/client";
+import { ExpenseCategory, ExpensePaymentMethod, ExpenseStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { deleteExpenseAction } from "./actions";
 
@@ -34,6 +34,25 @@ function categoryLabel(cat: ExpenseCategory) {
       return "Material";
     case ExpenseCategory.OUTROS:
       return "Outros";
+  }
+}
+
+function paymentMethodLabel(method: ExpensePaymentMethod | null | undefined) {
+  switch (method) {
+    case ExpensePaymentMethod.DINHEIRO:
+      return "Dinheiro";
+    case ExpensePaymentMethod.DEBITO:
+      return "Débito";
+    case ExpensePaymentMethod.CREDITO:
+      return "Crédito";
+    case ExpensePaymentMethod.PIX:
+      return "PIX";
+    case ExpensePaymentMethod.BOLETO:
+      return "Boleto";
+    case ExpensePaymentMethod.OUTRO:
+      return "Outro";
+    default:
+      return "-";
   }
 }
 
@@ -219,6 +238,8 @@ export default async function DespesasPage({ searchParams }: DespesasPageProps) 
                     <th className="pb-3">Categoria</th>
                     <th className="pb-3">Vencimento</th>
                     <th className="pb-3">Valor</th>
+                    <th className="pb-3">Forma</th>
+                    <th className="pb-3">Parcelas</th>
                     <th className="pb-3">Status</th>
                     <th className="pb-3">Data pag.</th>
                     <th className="pb-3">Ações</th>
@@ -238,6 +259,12 @@ export default async function DespesasPage({ searchParams }: DespesasPageProps) 
                       <td className="py-3 text-slate-300">{categoryLabel(despesa.category)}</td>
                       <td className="py-3 text-slate-300">{toDate(despesa.dueDate)}</td>
                       <td className="py-3 text-slate-200">{toCurrency(Number(despesa.amount))}</td>
+                      <td className="py-3 text-slate-300">{paymentMethodLabel(despesa.expensePaymentMethod)}</td>
+                      <td className="py-3 text-slate-300">
+                        {despesa.installments
+                          ? `${despesa.installmentNumber ?? "?"}/${despesa.installments}x`
+                          : "à vista"}
+                      </td>
                       <td className="py-3">
                         <span
                           className={`rounded-full px-3 py-1 text-xs font-semibold ${

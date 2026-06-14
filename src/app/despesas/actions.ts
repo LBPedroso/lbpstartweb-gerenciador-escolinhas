@@ -1,6 +1,6 @@
 "use server";
 
-import { ExpenseCategory, ExpenseStatus, Prisma } from "@prisma/client";
+import { ExpenseCategory, ExpensePaymentMethod, ExpenseStatus, Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -34,6 +34,23 @@ function parseDate(value: string): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
+function parseExpensePaymentMethod(value: string): ExpensePaymentMethod | null {
+  const allowed = new Set<ExpensePaymentMethod>([
+    ExpensePaymentMethod.DINHEIRO,
+    ExpensePaymentMethod.DEBITO,
+    ExpensePaymentMethod.CREDITO,
+    ExpensePaymentMethod.PIX,
+    ExpensePaymentMethod.BOLETO,
+    ExpensePaymentMethod.OUTRO,
+  ]);
+  return allowed.has(value as ExpensePaymentMethod) ? (value as ExpensePaymentMethod) : null;
+}
+
+function parsePositiveInt(value: string): number | null {
+  const n = parseInt(value, 10);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
 function revalidateAll() {
   revalidatePath("/");
   revalidatePath("/despesas");
@@ -46,6 +63,9 @@ export async function createExpenseAction(formData: FormData) {
   const dueDateRaw = getString(formData, "dueDate");
   const statusRaw = getString(formData, "status");
   const paymentDateRaw = getString(formData, "paymentDate");
+  const paymentMethodRaw = getString(formData, "expensePaymentMethod");
+  const installmentsRaw = getString(formData, "installments");
+  const installmentNumberRaw = getString(formData, "installmentNumber");
   const recurring = getString(formData, "recurring") === "on";
   const note = getString(formData, "note");
 
@@ -66,9 +86,16 @@ export async function createExpenseAction(formData: FormData) {
     statusRaw === ExpenseStatus.PAGO ? ExpenseStatus.PAGO : ExpenseStatus.PENDENTE;
 
   const paymentDate = status === ExpenseStatus.PAGO ? parseDate(paymentDateRaw) : null;
+  const expensePaymentMethod = parseExpensePaymentMethod(paymentMethodRaw);
+  const installments = parsePositiveInt(installmentsRaw);
+  const installmentNumber = parsePositiveInt(installmentNumberRaw);
+
+  if (installments && installmentNumber && installmentNumber > installments) {
+    errors.push("Número da parcela não pode ser maior que o total de parcelas.");
+  }
 
   if (errors.length > 0) {
-    const draft = encodeURIComponent(JSON.stringify({ description, categoryRaw, amountRaw, dueDateRaw, statusRaw, paymentDateRaw, recurring, note }));
+    const draft = encodeURIComponent(JSON.stringify({ description, categoryRaw, amountRaw, dueDateRaw, statusRaw, paymentDateRaw, paymentMethodRaw, installmentsRaw, installmentNumberRaw, recurring, note }));
     redirect(`/despesas/nova?error=${encodeURIComponent(errors[0])}&draft=${draft}`);
   }
 
@@ -80,6 +107,9 @@ export async function createExpenseAction(formData: FormData) {
       dueDate: dueDate!,
       status,
       paymentDate: paymentDate ?? null,
+      expensePaymentMethod: expensePaymentMethod ?? null,
+      installments: installments ?? null,
+      installmentNumber: installmentNumber ?? null,
       recurring,
       note: note || null,
     },
@@ -100,6 +130,9 @@ export async function updateExpenseAction(formData: FormData) {
   const dueDateRaw = getString(formData, "dueDate");
   const statusRaw = getString(formData, "status");
   const paymentDateRaw = getString(formData, "paymentDate");
+  const paymentMethodRaw = getString(formData, "expensePaymentMethod");
+  const installmentsRaw = getString(formData, "installments");
+  const installmentNumberRaw = getString(formData, "installmentNumber");
   const recurring = getString(formData, "recurring") === "on";
   const note = getString(formData, "note");
 
@@ -122,9 +155,16 @@ export async function updateExpenseAction(formData: FormData) {
     statusRaw === ExpenseStatus.PAGO ? ExpenseStatus.PAGO : ExpenseStatus.PENDENTE;
 
   const paymentDate = status === ExpenseStatus.PAGO ? parseDate(paymentDateRaw) : null;
+  const expensePaymentMethod = parseExpensePaymentMethod(paymentMethodRaw);
+  const installments = parsePositiveInt(installmentsRaw);
+  const installmentNumber = parsePositiveInt(installmentNumberRaw);
+
+  if (installments && installmentNumber && installmentNumber > installments) {
+    errors.push("Número da parcela não pode ser maior que o total de parcelas.");
+  }
 
   if (errors.length > 0) {
-    const draft = encodeURIComponent(JSON.stringify({ description, categoryRaw, amountRaw, dueDateRaw, statusRaw, paymentDateRaw, recurring, note }));
+    const draft = encodeURIComponent(JSON.stringify({ description, categoryRaw, amountRaw, dueDateRaw, statusRaw, paymentDateRaw, paymentMethodRaw, installmentsRaw, installmentNumberRaw, recurring, note }));
     redirect(`/despesas/${expenseId}/editar?error=${encodeURIComponent(errors[0])}&draft=${draft}`);
   }
 
@@ -137,6 +177,9 @@ export async function updateExpenseAction(formData: FormData) {
       dueDate: dueDate!,
       status,
       paymentDate: paymentDate ?? null,
+      expensePaymentMethod: expensePaymentMethod ?? null,
+      installments: installments ?? null,
+      installmentNumber: installmentNumber ?? null,
       recurring,
       note: note || null,
     },

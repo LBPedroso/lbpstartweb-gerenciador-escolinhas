@@ -38,6 +38,15 @@ enum ExpenseCategory {
   OUTROS
 }
 
+enum ExpensePaymentMethod {
+  DINHEIRO
+  DEBITO
+  CREDITO
+  PIX
+  BOLETO
+  OUTRO
+}
+
 model AdminUser {
   id           String   @id @default(cuid())
   name         String
@@ -88,17 +97,20 @@ model Payment {
 }
 
 model Expense {
-  id          String          @id @default(cuid())
-  description String
-  category    ExpenseCategory
-  amount      Decimal
-  dueDate     DateTime
-  paymentDate DateTime?
-  status      ExpenseStatus   @default(PENDENTE)
-  recurring   Boolean         @default(false)
-  note        String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id                   String                @id @default(cuid())
+  description          String
+  category             ExpenseCategory
+  amount               Decimal
+  dueDate              DateTime
+  paymentDate          DateTime?
+  status               ExpenseStatus         @default(PENDENTE)
+  expensePaymentMethod ExpensePaymentMethod?
+  installments         Int?
+  installmentNumber    Int?
+  recurring            Boolean               @default(false)
+  note                 String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
 
   @@index([dueDate])
   @@index([status])

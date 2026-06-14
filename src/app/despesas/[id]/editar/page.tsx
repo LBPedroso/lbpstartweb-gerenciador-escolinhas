@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ExpenseCategory, ExpenseStatus } from "@prisma/client";
+import { ExpenseCategory, ExpensePaymentMethod, ExpenseStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { updateExpenseAction } from "../../actions";
 
@@ -31,6 +31,9 @@ type DraftData = {
   dueDateRaw?: string;
   statusRaw?: string;
   paymentDateRaw?: string;
+  paymentMethodRaw?: string;
+  installmentsRaw?: string;
+  installmentNumberRaw?: string;
   recurring?: boolean;
   note?: string;
 };
@@ -160,6 +163,50 @@ export default async function EditarDespesaPage({ params, searchParams }: Editar
             />
             <p className="text-xs text-slate-500">Preencha se o status for Pago.</p>
           </label>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <label className="block space-y-1 sm:col-span-1">
+              <span className="text-sm text-slate-300">Forma de pagamento</span>
+              <select
+                name="expensePaymentMethod"
+                defaultValue={d?.paymentMethodRaw ?? despesa.expensePaymentMethod ?? ""}
+                className="h-10 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 text-sm text-slate-100 outline-none transition focus:border-emerald-400"
+              >
+                <option value="">Não informado</option>
+                <option value={ExpensePaymentMethod.DINHEIRO}>Dinheiro</option>
+                <option value={ExpensePaymentMethod.DEBITO}>Débito</option>
+                <option value={ExpensePaymentMethod.CREDITO}>Crédito</option>
+                <option value={ExpensePaymentMethod.PIX}>PIX</option>
+                <option value={ExpensePaymentMethod.BOLETO}>Boleto</option>
+                <option value={ExpensePaymentMethod.OUTRO}>Outro (permuta etc.)</option>
+              </select>
+            </label>
+            <label className="block space-y-1">
+              <span className="text-sm text-slate-300">Total de parcelas</span>
+              <input
+                name="installments"
+                type="number"
+                min="1"
+                max="48"
+                defaultValue={d?.installmentsRaw ?? despesa.installments ?? ""}
+                placeholder="Ex: 3"
+                className="h-10 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 text-sm text-slate-100 outline-none transition focus:border-emerald-400"
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-sm text-slate-300">Parcela nº</span>
+              <input
+                name="installmentNumber"
+                type="number"
+                min="1"
+                max="48"
+                defaultValue={d?.installmentNumberRaw ?? despesa.installmentNumber ?? ""}
+                placeholder="Ex: 1"
+                className="h-10 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 text-sm text-slate-100 outline-none transition focus:border-emerald-400"
+              />
+            </label>
+          </div>
+          <p className="text-xs text-slate-500">Deixe parcelas em branco para pagamento à vista.</p>
 
           <label className="flex items-center gap-3 cursor-pointer">
             <input
