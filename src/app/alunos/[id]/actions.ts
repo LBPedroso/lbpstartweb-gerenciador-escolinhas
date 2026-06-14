@@ -46,6 +46,8 @@ export async function registerMonthlyPaymentAction(formData: FormData) {
   const studentId = getString(formData, "studentId");
   const amountRaw = getString(formData, "amount");
   const paymentMethodRaw = getString(formData, "paymentMethod");
+  const referenceMonthRaw = getString(formData, "referenceMonth");
+  const referenceYearRaw = getString(formData, "referenceYear");
   const note = getString(formData, "note");
 
   if (!studentId) {
@@ -68,6 +70,21 @@ export async function registerMonthlyPaymentAction(formData: FormData) {
     redirectWithError(studentId, "Quando a forma for OUTRO, preencha a observacao.");
   }
 
+  const parsedReferenceMonth = Number.parseInt(referenceMonthRaw, 10);
+  const parsedReferenceYear = Number.parseInt(referenceYearRaw, 10);
+
+  if (
+    !Number.isInteger(parsedReferenceMonth) ||
+    parsedReferenceMonth < 1 ||
+    parsedReferenceMonth > 12
+  ) {
+    redirectWithError(studentId, "Selecione uma competencia valida para o pagamento.");
+  }
+
+  if (!Number.isInteger(parsedReferenceYear) || parsedReferenceYear < 2020 || parsedReferenceYear > 2100) {
+    redirectWithError(studentId, "Selecione um ano valido para o pagamento.");
+  }
+
   const studentExists = await prisma.student.findUnique({
     where: { id: studentId },
     select: { id: true },
@@ -78,8 +95,8 @@ export async function registerMonthlyPaymentAction(formData: FormData) {
   }
 
   const now = new Date();
-  const referenceMonth = now.getMonth() + 1;
-  const referenceYear = now.getFullYear();
+  const referenceMonth = parsedReferenceMonth;
+  const referenceYear = parsedReferenceYear;
 
   await prisma.payment.upsert({
     where: {

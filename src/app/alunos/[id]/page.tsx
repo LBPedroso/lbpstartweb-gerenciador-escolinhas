@@ -79,6 +79,21 @@ function paymentMethodLabel(method: PaymentMethod | null | undefined) {
   }
 }
 
+const MONTHS = [
+  { value: 1, label: "Janeiro" },
+  { value: 2, label: "Fevereiro" },
+  { value: 3, label: "Março" },
+  { value: 4, label: "Abril" },
+  { value: 5, label: "Maio" },
+  { value: 6, label: "Junho" },
+  { value: 7, label: "Julho" },
+  { value: 8, label: "Agosto" },
+  { value: 9, label: "Setembro" },
+  { value: 10, label: "Outubro" },
+  { value: 11, label: "Novembro" },
+  { value: 12, label: "Dezembro" },
+] as const;
+
 export default async function StudentProfilePage({ params, searchParams }: StudentProfilePageProps) {
   const { id } = await params;
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
@@ -115,6 +130,11 @@ export default async function StudentProfilePage({ params, searchParams }: Stude
     statusCurrentMonth === PaymentStatus.PAGO
       ? new Date(currentYear, now.getMonth() + 1, 10)
       : new Date(currentYear, now.getMonth(), 10);
+
+  const yearOptions: number[] = [];
+  for (let year = currentYear - 1; year <= currentYear + 2; year += 1) {
+    yearOptions.push(year);
+  }
 
   const age = calculateAge(student.birthDate);
 
@@ -227,6 +247,36 @@ export default async function StudentProfilePage({ params, searchParams }: Stude
               <form action={registerMonthlyPaymentAction} className="mt-4 space-y-3 rounded-xl border border-slate-700 bg-slate-950/50 p-3">
                 <input type="hidden" name="studentId" value={student.id} />
                 <p className="text-xs text-slate-400">Registrar pagamento de {referenceLabel(currentMonth, currentYear)}</p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label className="block space-y-1">
+                    <span className="text-xs text-slate-400">Competência - Mês</span>
+                    <select
+                      name="referenceMonth"
+                      defaultValue={currentMonth}
+                      className="h-10 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 text-sm text-slate-100 outline-none transition focus:border-emerald-400"
+                    >
+                      {MONTHS.map((month) => (
+                        <option key={month.value} value={month.value}>
+                          {month.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block space-y-1">
+                    <span className="text-xs text-slate-400">Competência - Ano</span>
+                    <select
+                      name="referenceYear"
+                      defaultValue={currentYear}
+                      className="h-10 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 text-sm text-slate-100 outline-none transition focus:border-emerald-400"
+                    >
+                      {yearOptions.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
                 <label className="block space-y-1">
                   <span className="text-xs text-slate-400">Valor pago</span>
                   <input
