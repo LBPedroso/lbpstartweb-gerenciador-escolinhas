@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PaymentMethod, PaymentStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { StudentAvatar } from "@/components/student-avatar";
 import { cancelPaymentAction, registerMonthlyPaymentAction } from "./actions";
 
 type StudentProfilePageProps = {
@@ -188,21 +189,16 @@ export default async function StudentProfilePage({ params, searchParams }: Stude
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <article className="rounded-2xl border border-slate-700 bg-slate-900/90 p-5 lg:col-span-1">
             <div className="mb-4 flex items-center gap-4">
-              {studentPhotoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={studentPhotoUrl}
-                  alt={`Foto de ${student.fullName}`}
-                  className="h-20 w-20 rounded-2xl border border-slate-600 object-cover"
-                />
-              ) : (
-                <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-slate-600 bg-slate-950 text-lg font-bold text-emerald-300">
-                  {studentInitials(student.fullName)}
-                </div>
-              )}
+              <StudentAvatar
+                fullName={student.fullName}
+                photoUrl={studentPhotoUrl ?? null}
+                initials={studentInitials(student.fullName)}
+              />
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Foto / Avatar</p>
-                <p className="text-sm text-slate-300">{studentPhotoUrl ? "Foto cadastrada" : "Sem foto cadastrada"}</p>
+                <p className="text-sm text-slate-300">
+                  {studentPhotoUrl ? "Foto cadastrada (com fallback para avatar)" : "Sem foto cadastrada"}
+                </p>
               </div>
             </div>
             <h2 className="text-xl font-semibold">{student.fullName}</h2>

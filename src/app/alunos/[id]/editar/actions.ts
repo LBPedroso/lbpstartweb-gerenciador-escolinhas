@@ -50,6 +50,18 @@ function getOptional(formData: FormData, key: string) {
   return value || null;
 }
 
+function normalizePhotoUrl(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  if (value.startsWith("/") || /^https?:\/\//i.test(value)) {
+    return value;
+  }
+
+  return `https://${value}`;
+}
+
 function onlyDigits(value: string | null) {
   return value ? value.replace(/\D/g, "") : null;
 }
@@ -251,7 +263,7 @@ export async function updateStudentAction(formData: FormData) {
     redirectWithErrorAndDraft(id, photoUploadResult.error, formData);
   }
 
-  const photoUrlManual = getOptional(formData, "photoUrl");
+  const photoUrlManual = normalizePhotoUrl(getOptional(formData, "photoUrl"));
   const finalPhotoUrl = photoUploadResult.photoUrl ?? photoUrlManual;
 
   try {
