@@ -8,6 +8,7 @@ type PagamentosPageProps = {
   searchParams?: Promise<{
     mes?: string | string[];
     ano?: string | string[];
+    status?: string | string[];
   }>;
 };
 
@@ -76,6 +77,12 @@ export default async function PagamentosPage({ searchParams }: PagamentosPagePro
     ? selectedYear
     : now.getFullYear();
 
+  const selectedStatusRaw = normalizeQuery(resolved?.status).toLowerCase();
+  const safeStatus: "todos" | "pago" | "pendente" =
+    selectedStatusRaw === "pago" || selectedStatusRaw === "pendente"
+      ? selectedStatusRaw
+      : "todos";
+
   const students = await prisma.student.findMany({
     orderBy: { fullName: "asc" },
     select: {
@@ -97,12 +104,22 @@ export default async function PagamentosPage({ searchParams }: PagamentosPagePro
   const pendentes = students.filter((s) => !s.payments[0] || s.payments[0].status !== PaymentStatus.PAGO);
   const totalRecebido = pagos.reduce((acc, s) => acc + Number(s.payments[0]?.amount ?? 0), 0);
 
+  const filteredStudents =
+    safeStatus === "pago" ? pagos : safeStatus === "pendente" ? pendentes : students;
+
   const years: number[] = [];
   for (let y = now.getFullYear() - 1; y <= now.getFullYear() + 1; y++) {
     years.push(y);
   }
 
   const monthLabel = MONTHS.find((m) => m.value === safeMonth)?.label ?? "";
+
+  function paymentsFilterHref(status: "todos" | "pago" | "pendente") {
+    return `/pagamentos?mes=${safeMonth}&ano=${safeYear}&status=${status}`;
+  }
+
+  const statusLabel =
+    safeStatus === "pago" ? "Somente pagos" : safeStatus === "pendente" ? "Somente pendentes" : "Todos";
 
   return (
     <main className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100 sm:px-6 lg:px-10">
@@ -143,18 +160,39 @@ export default async function PagamentosPage({ searchParams }: PagamentosPagePro
 
         {/* KPIs */}
         <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <article className="rounded-2xl border border-slate-700 bg-slate-900/90 p-4 text-center">
+          <Link
+            href={paymentsFilterHref("todos")}
+            className={`rounded-2xl border p-4 text-center transition ${
+              safeStatus === "todos"
+                ? "border-emerald-400/40 bg-emerald-500/10"
+                : "border-slate-700 bg-slate-900/90 hover:border-slate-500"
+            }`}
+          >
             <p className="text-xs uppercase tracking-widest text-slate-400">Total alunos</p>
             <p className="mt-2 text-3xl font-bold text-slate-100">{totalAlunos}</p>
-          </article>
-          <article className="rounded-2xl border border-emerald-500/30 bg-slate-900/90 p-4 text-center">
+          </Link>
+          <Link
+            href={paymentsFilterHref("pago")}
+            className={`rounded-2xl border p-4 text-center transition ${
+              safeStatus === "pago"
+                ? "border-emerald-400/40 bg-emerald-500/10"
+                : "border-emerald-500/30 bg-slate-900/90 hover:border-emerald-400/50"
+            }`}
+          >
             <p className="text-xs uppercase tracking-widest text-emerald-400">Pagos</p>
             <p className="mt-2 text-3xl font-bold text-emerald-300">{pagos.length}</p>
-          </article>
-          <article className="rounded-2xl border border-amber-500/30 bg-slate-900/90 p-4 text-center">
+          </Link>
+          <Link
+            href={paymentsFilterHref("pendente")}
+            className={`rounded-2xl border p-4 text-center transition ${
+              safeStatus === "pendente"
+                ? "border-emerald-400/40 bg-emerald-500/10"
+                : "border-amber-500/30 bg-slate-900/90 hover:border-amber-400/50"
+            }`}
+          >
             <p className="text-xs uppercase tracking-widest text-amber-400">Pendentes</p>
             <p className="mt-2 text-3xl font-bold text-amber-300">{pendentes.length}</p>
-          </article>
+          </Link>
           <article className="rounded-2xl border border-slate-700 bg-slate-900/90 p-4 text-center">
             <p className="text-xs uppercase tracking-widest text-slate-400">Recebido</p>
             <p className="mt-2 text-2xl font-bold text-slate-100">{toCurrency(totalRecebido)}</p>
@@ -164,6 +202,7 @@ export default async function PagamentosPage({ searchParams }: PagamentosPagePro
         {/* Filtro */}
         <section className="rounded-2xl border border-slate-700 bg-slate-900/90 p-4">
           <form method="GET" className="flex flex-wrap items-end gap-3">
+            <input type="hidden" name="status" value={safeStatus} />
             <label className="space-y-1">
               <span className="text-xs text-slate-400">Mês</span>
               <select
@@ -206,6 +245,7 @@ export default async function PagamentosPage({ searchParams }: PagamentosPagePro
           <h2 className="text-lg font-semibold">
             Mensalidades — {monthLabel} / {safeYear}
           </h2>
+          <p className="mt-2 text-sm text-slate-400">Filtro atual: {statusLabel}</p>
 
           {totalAlunos === 0 ? (
             <p className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">
@@ -213,6 +253,10 @@ export default async function PagamentosPage({ searchParams }: PagamentosPagePro
               <Link href="/alunos/novo" className="underline hover:text-amber-100">
                 Cadastrar aluno
               </Link>
+            </p>
+          ) : filteredStudents.length === 0 ? (
+            <p className="mt-4 rounded-xl border border-slate-600/30 bg-slate-800/50 p-4 text-sm text-slate-300">
+              Não há registros para o filtro selecionado.
             </p>
           ) : (
             <div className="mt-4 overflow-x-auto">
@@ -229,7 +273,7 @@ export default async function PagamentosPage({ searchParams }: PagamentosPagePro
                   </tr>
                 </thead>
                 <tbody>
-                  {students.map((student) => {
+                  {filteredStudents.map((student) => {
                     const payment = student.payments[0] ?? null;
                     const isPago = payment?.status === PaymentStatus.PAGO;
 

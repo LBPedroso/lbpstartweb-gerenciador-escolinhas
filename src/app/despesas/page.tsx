@@ -9,6 +9,7 @@ type DespesasPageProps = {
   searchParams?: Promise<{
     mes?: string | string[];
     ano?: string | string[];
+    status?: string | string[];
   }>;
 };
 
@@ -92,6 +93,12 @@ export default async function DespesasPage({ searchParams }: DespesasPageProps) 
       ? selectedYear
       : now.getFullYear();
 
+  const selectedStatusRaw = normalizeQuery(resolved?.status).toLowerCase();
+  const safeStatus: "todos" | "pago" | "pendente" =
+    selectedStatusRaw === "pago" || selectedStatusRaw === "pendente"
+      ? selectedStatusRaw
+      : "todos";
+
   const monthStart = new Date(safeYear, safeMonth - 1, 1);
   const monthEnd = new Date(safeYear, safeMonth, 1);
 
@@ -108,12 +115,26 @@ export default async function DespesasPage({ searchParams }: DespesasPageProps) 
     .filter((d) => d.status === ExpenseStatus.PENDENTE)
     .reduce((acc, d) => acc + Number(d.amount), 0);
 
+  const filteredDespesas =
+    safeStatus === "pago"
+      ? despesas.filter((d) => d.status === ExpenseStatus.PAGO)
+      : safeStatus === "pendente"
+        ? despesas.filter((d) => d.status === ExpenseStatus.PENDENTE)
+        : despesas;
+
   const years: number[] = [];
   for (let y = now.getFullYear() - 1; y <= now.getFullYear() + 1; y++) {
     years.push(y);
   }
 
   const monthLabel = MONTHS.find((m) => m.value === safeMonth)?.label ?? "";
+
+  function expensesFilterHref(status: "todos" | "pago" | "pendente") {
+    return `/despesas?mes=${safeMonth}&ano=${safeYear}&status=${status}`;
+  }
+
+  const statusLabel =
+    safeStatus === "pago" ? "Somente pagas" : safeStatus === "pendente" ? "Somente pendentes" : "Todas";
 
   return (
     <main className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100 sm:px-6 lg:px-10">
@@ -160,23 +181,45 @@ export default async function DespesasPage({ searchParams }: DespesasPageProps) 
 
         {/* KPIs */}
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <article className="rounded-2xl border border-slate-700 bg-slate-900/90 p-4 text-center">
+          <Link
+            href={expensesFilterHref("todos")}
+            className={`rounded-2xl border p-4 text-center transition ${
+              safeStatus === "todos"
+                ? "border-emerald-400/40 bg-emerald-500/10"
+                : "border-slate-700 bg-slate-900/90 hover:border-slate-500"
+            }`}
+          >
             <p className="text-xs uppercase tracking-widest text-slate-400">Total do mês</p>
             <p className="mt-2 text-2xl font-bold text-slate-100">{toCurrency(totalGeral)}</p>
-          </article>
-          <article className="rounded-2xl border border-emerald-500/30 bg-slate-900/90 p-4 text-center">
+          </Link>
+          <Link
+            href={expensesFilterHref("pago")}
+            className={`rounded-2xl border p-4 text-center transition ${
+              safeStatus === "pago"
+                ? "border-emerald-400/40 bg-emerald-500/10"
+                : "border-emerald-500/30 bg-slate-900/90 hover:border-emerald-400/50"
+            }`}
+          >
             <p className="text-xs uppercase tracking-widest text-emerald-400">Pago</p>
             <p className="mt-2 text-2xl font-bold text-emerald-300">{toCurrency(totalPago)}</p>
-          </article>
-          <article className="rounded-2xl border border-amber-500/30 bg-slate-900/90 p-4 text-center">
+          </Link>
+          <Link
+            href={expensesFilterHref("pendente")}
+            className={`rounded-2xl border p-4 text-center transition ${
+              safeStatus === "pendente"
+                ? "border-emerald-400/40 bg-emerald-500/10"
+                : "border-amber-500/30 bg-slate-900/90 hover:border-amber-400/50"
+            }`}
+          >
             <p className="text-xs uppercase tracking-widest text-amber-400">Pendente</p>
             <p className="mt-2 text-2xl font-bold text-amber-300">{toCurrency(totalPendente)}</p>
-          </article>
+          </Link>
         </section>
 
         {/* Filtro */}
         <section className="rounded-2xl border border-slate-700 bg-slate-900/90 p-4">
           <form method="GET" className="flex flex-wrap items-end gap-3">
+            <input type="hidden" name="status" value={safeStatus} />
             <label className="space-y-1">
               <span className="text-xs text-slate-400">Mês</span>
               <select
@@ -219,6 +262,10 @@ export default async function DespesasPage({ searchParams }: DespesasPageProps) 
           <h2 className="text-lg font-semibold">
             Despesas — {monthLabel} / {safeYear}
           </h2>
+          <p className="mt-2 text-sm text-slate-400">Filtro atual: {statusLabel}</p>
+          <p className="mt-2 text-sm text-slate-400">
+            Cadastro = data em que a despesa foi lançada. Vencimento = data usada para prever próximas contas e pendências.
+          </p>
 
           {despesas.length === 0 ? (
             <div className="mt-4 space-y-2">
@@ -229,6 +276,12 @@ export default async function DespesasPage({ searchParams }: DespesasPageProps) 
                 </Link>
               </p>
             </div>
+          ) : filteredDespesas.length === 0 ? (
+            <div className="mt-4 space-y-2">
+              <p className="rounded-xl border border-slate-600/30 bg-slate-800/50 p-4 text-sm text-slate-300">
+                Não há despesas para o filtro selecionado neste mês.
+              </p>
+            </div>
           ) : (
             <div className="mt-4 overflow-x-auto">
               <table className="w-full min-w-[720px] text-left text-sm">
@@ -236,6 +289,7 @@ export default async function DespesasPage({ searchParams }: DespesasPageProps) 
                   <tr>
                     <th className="pb-3">Descrição</th>
                     <th className="pb-3">Categoria</th>
+                    <th className="pb-3">Cadastro</th>
                     <th className="pb-3">Vencimento</th>
                     <th className="pb-3">Valor</th>
                     <th className="pb-3">Forma</th>
@@ -246,7 +300,7 @@ export default async function DespesasPage({ searchParams }: DespesasPageProps) 
                   </tr>
                 </thead>
                 <tbody>
-                  {despesas.map((despesa) => (
+                  {filteredDespesas.map((despesa) => (
                     <tr key={despesa.id} className="border-t border-slate-800">
                       <td className="py-3 font-medium text-slate-100">
                         {despesa.description}
@@ -257,6 +311,7 @@ export default async function DespesasPage({ searchParams }: DespesasPageProps) 
                         ) : null}
                       </td>
                       <td className="py-3 text-slate-300">{categoryLabel(despesa.category)}</td>
+                      <td className="py-3 text-slate-300">{toDate(despesa.createdAt)}</td>
                       <td className="py-3 text-slate-300">{toDate(despesa.dueDate)}</td>
                       <td className="py-3 text-slate-200">{toCurrency(Number(despesa.amount))}</td>
                       <td className="py-3 text-slate-300">{paymentMethodLabel(despesa.expensePaymentMethod)}</td>
@@ -289,6 +344,7 @@ export default async function DespesasPage({ searchParams }: DespesasPageProps) 
                             <input type="hidden" name="expenseId" value={despesa.id} />
                             <input type="hidden" name="mes" value={safeMonth} />
                             <input type="hidden" name="ano" value={safeYear} />
+                            <input type="hidden" name="status" value={safeStatus} />
                             <button
                               type="submit"
                               className="rounded-lg border border-rose-500/40 px-3 py-1 text-xs font-medium text-rose-400 transition hover:border-rose-400 hover:text-rose-300"

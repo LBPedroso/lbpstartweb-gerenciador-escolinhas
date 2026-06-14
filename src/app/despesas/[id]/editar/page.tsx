@@ -130,7 +130,7 @@ export default async function EditarDespesaPage({ params, searchParams }: Editar
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <label className="block space-y-1">
-              <span className="text-sm text-slate-300">Vencimento <span className="text-rose-400">*</span></span>
+              <span className="text-sm text-slate-300">1º vencimento <span className="text-rose-400">*</span></span>
               <input
                 name="dueDate"
                 type="date"
@@ -138,6 +138,7 @@ export default async function EditarDespesaPage({ params, searchParams }: Editar
                 defaultValue={d?.dueDateRaw ?? toInputDate(despesa.dueDate)}
                 className="h-10 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 text-sm text-slate-100 outline-none transition focus:border-emerald-400"
               />
+              <p className="text-xs text-slate-500">Essa data organiza a previsão das próximas contas no dashboard.</p>
             </label>
 
             <label className="block space-y-1">
@@ -161,7 +162,7 @@ export default async function EditarDespesaPage({ params, searchParams }: Editar
               defaultValue={d?.paymentDateRaw ?? toInputDate(despesa.paymentDate)}
               className="h-10 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 text-sm text-slate-100 outline-none transition focus:border-emerald-400"
             />
-            <p className="text-xs text-slate-500">Preencha se o status for Pago.</p>
+            <p className="text-xs text-slate-500">Preencha quando a conta for quitada para conciliar vencimento x pagamento.</p>
           </label>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

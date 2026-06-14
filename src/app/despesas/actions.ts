@@ -247,11 +247,13 @@ export async function deleteExpenseAction(formData: FormData) {
   const expenseId = getString(formData, "expenseId");
   const mes = getString(formData, "mes");
   const ano = getString(formData, "ano");
+  const status = getString(formData, "status");
 
   if (!expenseId) redirect("/despesas");
 
   await prisma.expense.delete({ where: { id: expenseId } });
 
   revalidateAll();
-  redirect(`/despesas?mes=${mes}&ano=${ano}`);
+  const statusParam = status ? `&status=${encodeURIComponent(status)}` : "";
+  redirect(`/despesas?mes=${mes}&ano=${ano}${statusParam}`);
 }
