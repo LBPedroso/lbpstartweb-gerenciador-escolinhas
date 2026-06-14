@@ -1,6 +1,7 @@
 import { ExpenseCategory, ExpenseStatus, PaymentMethod, PaymentStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { CoverGate } from "@/components/cover-gate";
 
 export const dynamic = "force-dynamic";
 
@@ -407,8 +408,9 @@ export default async function Home({ searchParams }: HomeProps) {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100 sm:px-6 lg:px-10">
-      <div className="mx-auto max-w-7xl space-y-6">
+    <CoverGate>
+      <main className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100 sm:px-6 lg:px-10">
+        <div className="mx-auto max-w-7xl space-y-6">
         <header className="rounded-2xl border border-emerald-400/30 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-800 p-5 shadow-[0_0_30px_rgba(16,185,129,0.18)]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -717,7 +719,8 @@ export default async function Home({ searchParams }: HomeProps) {
             </div>
           </article>
         </section>
-      </div>
-    </main>
+        </div>
+      </main>
+    </CoverGate>
   );
 }
