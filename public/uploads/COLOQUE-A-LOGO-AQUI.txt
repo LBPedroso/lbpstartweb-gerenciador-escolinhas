@@ -1,0 +1,6 @@
+Coloque a logo com este nome:
+
+logo-rsports.png
+
+Caminho final esperado:
+public/uploads/logo-rsports.png

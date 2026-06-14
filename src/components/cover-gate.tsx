@@ -1,34 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { BrandLogo } from "@/components/brand-logo";
 
 type CoverGateProps = {
   children: React.ReactNode;
 };
 
-const COVER_KEY = "r-sports-cover-dismissed";
-
 export function CoverGate({ children }: CoverGateProps) {
-  const [visible, setVisible] = useState(() => {
-    if (typeof window === "undefined") {
-      return true;
-    }
-
-    const forceCover = new URLSearchParams(window.location.search).get("capa") === "1";
-    if (forceCover) {
-      return true;
-    }
-
-    try {
-      return window.localStorage.getItem(COVER_KEY) !== "1";
-    } catch {
-      return false;
-    }
-  });
+  const searchParams = useSearchParams();
+  const [dismissed, setDismissed] = useState(false);
+  const forceCover = searchParams.get("capa") === "1";
+  const visible = forceCover && !dismissed;
 
   function enterSystem() {
-    setVisible(false);
+    setDismissed(true);
 
     if (typeof window !== "undefined") {
       const currentUrl = new URL(window.location.href);
@@ -39,11 +26,6 @@ export function CoverGate({ children }: CoverGateProps) {
       }
     }
 
-    try {
-      window.localStorage.setItem(COVER_KEY, "1");
-    } catch {
-      // Ignore localStorage errors.
-    }
   }
 
   return (
@@ -96,7 +78,7 @@ export function CoverGate({ children }: CoverGateProps) {
                 </div>
 
                 <p className="text-xs text-slate-400">
-                  Dica: salve a logo da escolinha em public/brand/logo-rsports.png para usar a arte oficial na capa.
+                  Logo oficial: salve o arquivo em public/uploads/logo-rsports.png.
                 </p>
               </div>
             </div>
