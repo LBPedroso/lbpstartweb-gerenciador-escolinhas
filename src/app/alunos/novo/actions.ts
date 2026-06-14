@@ -1,5 +1,7 @@
 "use server";
 
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -28,6 +30,14 @@ const DRAFT_FIELDS = [
   "primaryPosition",
   "photoUrl",
 ] as const;
+
+const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_PHOTO_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -112,6 +122,40 @@ function redirectWithErrorAndDraft(message: string, formData: FormData): never {
   redirect(`/alunos/novo?error=${encodeURIComponent(message)}&draft=${draftEncoded}`);
 }
 
+async function saveStudentPhotoUpload(formData: FormData) {
+  const file = formData.get("photoFile");
+
+  if (!(file instanceof File) || file.size === 0) {
+    return { photoUrl: null as string | null, error: null as string | null };
+  }
+
+  if (!ALLOWED_PHOTO_MIME_TYPES.has(file.type)) {
+    return {
+      photoUrl: null,
+      error: "Formato de foto invalido. Use JPG, PNG, WEBP ou GIF.",
+    };
+  }
+
+  if (file.size > MAX_PHOTO_SIZE_BYTES) {
+    return {
+      photoUrl: null,
+      error: "A foto deve ter no maximo 5MB.",
+    };
+  }
+
+  const extFromName = path.extname(file.name).toLowerCase();
+  const ext = extFromName || ".jpg";
+  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`;
+  const uploadDir = path.join(process.cwd(), "public", "uploads", "students");
+  const destination = path.join(uploadDir, fileName);
+
+  await mkdir(uploadDir, { recursive: true });
+  const bytes = await file.arrayBuffer();
+  await writeFile(destination, Buffer.from(bytes));
+
+  return { photoUrl: `/uploads/students/${fileName}`, error: null as string | null };
+}
+
 export async function createStudentAction(formData: FormData) {
   const fullName = getString(formData, "fullName");
   const birthDateRaw = getString(formData, "birthDate");
@@ -182,6 +226,15 @@ export async function createStudentAction(formData: FormData) {
     }
   }
 
+  const photoUploadResult = await saveStudentPhotoUpload(formData);
+
+  if (photoUploadResult.error) {
+    redirectWithErrorAndDraft(photoUploadResult.error, formData);
+  }
+
+  const photoUrlManual = getOptional(formData, "photoUrl");
+  const finalPhotoUrl = photoUploadResult.photoUrl ?? photoUrlManual;
+
   await prisma.student.create({
     data: {
       fullName,
@@ -195,7 +248,7 @@ export async function createStudentAction(formData: FormData) {
       fatherPhone,
       category,
       primaryPosition: getOptional(formData, "primaryPosition"),
-      photoUrl: getOptional(formData, "photoUrl"),
+      photoUrl: finalPhotoUrl,
     },
   });
 

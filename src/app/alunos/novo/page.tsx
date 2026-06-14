@@ -67,7 +67,7 @@ export default async function NewStudentPage({ searchParams }: NewStudentPagePro
           <p className="mb-4 text-sm text-slate-300">
             Campos obrigatórios: nome, data de nascimento, categoria e ao menos um responsável com telefone.
           </p>
-          <form action={createStudentAction} className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <form action={createStudentAction} encType="multipart/form-data" className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <label className="space-y-2 md:col-span-2">
               <span className="text-sm text-slate-300">Nome completo *</span>
               <input
@@ -183,6 +183,17 @@ export default async function NewStudentPage({ searchParams }: NewStudentPagePro
                 defaultValue={draftValue(draft, "primaryPosition")}
                 className="h-11 w-full rounded-xl border border-slate-600 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition focus:border-emerald-400"
               />
+            </label>
+
+            <label className="space-y-2">
+              <span className="text-sm text-slate-300">Upload da foto (demo local)</span>
+              <input
+                name="photoFile"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                className="h-11 w-full rounded-xl border border-slate-600 bg-slate-950 px-3 text-sm text-slate-200 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-500 file:px-3 file:py-1 file:text-sm file:font-semibold file:text-slate-950 hover:file:bg-emerald-400"
+              />
+              <p className="text-xs text-slate-400">Opcional. Tamanho maximo: 5MB.</p>
             </label>
 
             <label className="space-y-2">
