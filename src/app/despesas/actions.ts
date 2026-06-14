@@ -133,25 +133,21 @@ export async function createExpenseAction(formData: FormData) {
   if (installments && installments > 1) {
     const installmentAmounts = splitInstallmentsAmount(amount!, installments);
 
-    await prisma.$transaction(
-      installmentAmounts.map((installmentAmount, index) =>
-        prisma.expense.create({
-          data: {
-            description,
-            category: category!,
-            amount: new Prisma.Decimal(installmentAmount),
-            dueDate: addMonths(dueDate!, index),
-            status: status === ExpenseStatus.PAGO && index === 0 ? ExpenseStatus.PAGO : ExpenseStatus.PENDENTE,
-            paymentDate: status === ExpenseStatus.PAGO && index === 0 ? paymentDate ?? new Date() : null,
-            expensePaymentMethod: expensePaymentMethod ?? null,
-            installments,
-            installmentNumber: index + 1,
-            recurring,
-            note: note || null,
-          },
-        }),
-      ),
-    );
+    await prisma.expense.createMany({
+      data: installmentAmounts.map((installmentAmount, index) => ({
+        description,
+        category: category!,
+        amount: new Prisma.Decimal(installmentAmount),
+        dueDate: addMonths(dueDate!, index),
+        status: status === ExpenseStatus.PAGO && index === 0 ? ExpenseStatus.PAGO : ExpenseStatus.PENDENTE,
+        paymentDate: status === ExpenseStatus.PAGO && index === 0 ? paymentDate ?? new Date() : null,
+        expensePaymentMethod: expensePaymentMethod ?? null,
+        installments,
+        installmentNumber: index + 1,
+        recurring,
+        note: note || null,
+      })),
+    });
   } else {
     await prisma.expense.create({
       data: {
