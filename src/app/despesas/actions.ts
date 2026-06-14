@@ -1,9 +1,17 @@
 "use server";
 
-import { ExpenseCategory, ExpensePaymentMethod, ExpenseStatus, Prisma } from "@prisma/client";
+import { ExpenseCategory, ExpenseStatus, Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+
+type ExpensePaymentMethodValue =
+  | "DINHEIRO"
+  | "DEBITO"
+  | "CREDITO"
+  | "PIX"
+  | "BOLETO"
+  | "OUTRO";
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -34,16 +42,18 @@ function parseDate(value: string): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
-function parseExpensePaymentMethod(value: string): ExpensePaymentMethod | null {
-  const allowed = new Set<ExpensePaymentMethod>([
-    ExpensePaymentMethod.DINHEIRO,
-    ExpensePaymentMethod.DEBITO,
-    ExpensePaymentMethod.CREDITO,
-    ExpensePaymentMethod.PIX,
-    ExpensePaymentMethod.BOLETO,
-    ExpensePaymentMethod.OUTRO,
+function parseExpensePaymentMethod(value: string): ExpensePaymentMethodValue | null {
+  const allowed = new Set<ExpensePaymentMethodValue>([
+    "DINHEIRO",
+    "DEBITO",
+    "CREDITO",
+    "PIX",
+    "BOLETO",
+    "OUTRO",
   ]);
-  return allowed.has(value as ExpensePaymentMethod) ? (value as ExpensePaymentMethod) : null;
+  return allowed.has(value as ExpensePaymentMethodValue)
+    ? (value as ExpensePaymentMethodValue)
+    : null;
 }
 
 function parsePositiveInt(value: string): number | null {

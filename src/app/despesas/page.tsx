@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ExpenseCategory, ExpensePaymentMethod, ExpenseStatus } from "@prisma/client";
+import { ExpenseCategory, ExpenseStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { deleteExpenseAction } from "./actions";
 
@@ -37,19 +37,19 @@ function categoryLabel(cat: ExpenseCategory) {
   }
 }
 
-function paymentMethodLabel(method: ExpensePaymentMethod | null | undefined) {
+function paymentMethodLabel(method: string | null | undefined) {
   switch (method) {
-    case ExpensePaymentMethod.DINHEIRO:
+    case "DINHEIRO":
       return "Dinheiro";
-    case ExpensePaymentMethod.DEBITO:
+    case "DEBITO":
       return "Débito";
-    case ExpensePaymentMethod.CREDITO:
+    case "CREDITO":
       return "Crédito";
-    case ExpensePaymentMethod.PIX:
+    case "PIX":
       return "PIX";
-    case ExpensePaymentMethod.BOLETO:
+    case "BOLETO":
       return "Boleto";
-    case ExpensePaymentMethod.OUTRO:
+    case "OUTRO":
       return "Outro";
     default:
       return "-";

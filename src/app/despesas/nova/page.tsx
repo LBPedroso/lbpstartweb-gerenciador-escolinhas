@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ExpenseCategory, ExpensePaymentMethod, ExpenseStatus } from "@prisma/client";
+import { ExpenseCategory, ExpenseStatus } from "@prisma/client";
 import { createExpenseAction } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -162,12 +162,12 @@ export default async function NovaDespesaPage({ searchParams }: NovaPageProps) {
                 className="h-10 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 text-sm text-slate-100 outline-none transition focus:border-emerald-400"
               >
                 <option value="">Não informado</option>
-                <option value={ExpensePaymentMethod.DINHEIRO}>Dinheiro</option>
-                <option value={ExpensePaymentMethod.DEBITO}>Débito</option>
-                <option value={ExpensePaymentMethod.CREDITO}>Crédito</option>
-                <option value={ExpensePaymentMethod.PIX}>PIX</option>
-                <option value={ExpensePaymentMethod.BOLETO}>Boleto</option>
-                <option value={ExpensePaymentMethod.OUTRO}>Outro (permuta etc.)</option>
+                <option value="DINHEIRO">Dinheiro</option>
+                <option value="DEBITO">Débito</option>
+                <option value="CREDITO">Crédito</option>
+                <option value="PIX">PIX</option>
+                <option value="BOLETO">Boleto</option>
+                <option value="OUTRO">Outro (permuta etc.)</option>
               </select>
             </label>
             <label className="block space-y-1">
