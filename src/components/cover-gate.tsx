@@ -30,19 +30,24 @@ export function CoverGate({ children }: CoverGateProps) {
   function enterSystem() {
     setVisible(false);
 
+    let cleanUrl = "/";
+
     if (typeof window !== "undefined") {
       const currentUrl = new URL(window.location.href);
       if (currentUrl.searchParams.has("capa")) {
         currentUrl.searchParams.delete("capa");
-        const cleanUrl = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
-        window.history.replaceState({}, "", cleanUrl || "/");
       }
+      cleanUrl = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}` || "/";
     }
 
     try {
       window.localStorage.setItem(COVER_KEY, "1");
     } catch {
       // Ignore localStorage errors.
+    }
+
+    if (typeof window !== "undefined") {
+      window.location.assign(cleanUrl);
     }
   }
 
