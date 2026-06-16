@@ -194,8 +194,9 @@ export default async function NovaDespesaPage({ searchParams }: NovaPageProps) {
               defaultChecked={draft.recurring ?? false}
               className="h-4 w-4 rounded border-slate-600 accent-emerald-500"
             />
-            <span className="text-sm text-slate-300">Despesa recorrente (mensal)</span>
+            <span className="text-sm text-slate-300">Despesa recorrente (gera 12 cópias mensais)</span>
           </label>
+          <p className="text-xs text-slate-500">Marque para criar automaticamente 12 cópias desta despesa nos próximos 12 meses.</p>
 
           <label className="block space-y-1">
             <span className="text-sm text-slate-300">Observação (opcional)</span>

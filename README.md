@@ -20,6 +20,18 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Versao atual
+
+- v1.0-demo
+- Marco de apresentacao comercial validado para escolinha.
+- Fluxos principais operando com estabilidade para demo e uso inicial.
+
+## Estado do projeto
+
+- Sistema funcional para alunos, pagamentos, despesas e dashboard.
+- Capa de apresentacao disponivel via `?capa=1`.
+- Base preparada para evolucoes futuras apos a validacao comercial.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

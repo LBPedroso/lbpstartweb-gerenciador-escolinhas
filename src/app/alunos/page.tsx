@@ -69,6 +69,7 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
       fatherPhone: true,
       cpf: true,
       category: true,
+      primaryPosition: true,
       studentPhone: true,
       createdAt: true,
     },
@@ -108,6 +109,12 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
               <p className="mt-1 text-sm text-slate-300">Busca rápida por nome para operação diária da escolinha.</p>
             </div>
             <nav className="flex items-center gap-2 text-sm font-medium">
+              <Link
+                href="/?capa=1"
+                className="rounded-xl border border-orange-400/40 bg-orange-500/10 px-4 py-2 text-orange-200 transition hover:border-orange-300 hover:bg-orange-500/20"
+              >
+                Inicio
+              </Link>
               <Link
                 href="/"
                 className="rounded-xl border border-slate-600 px-4 py-2 text-slate-200 transition hover:border-emerald-400/50 hover:text-emerald-200"
@@ -205,7 +212,7 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
                     <th className="pb-3">Nome</th>
                     <th className="pb-3">Responsáveis</th>
                     <th className="pb-3">Categoria</th>
-                    <th className="pb-3">Telefone</th>
+                    <th className="pb-3">Posição</th>
                     <th className="pb-3">Cadastro</th>
                     <th className="pb-3">Ações</th>
                   </tr>
@@ -218,7 +225,7 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
                         {[student.motherName, student.fatherName].filter(Boolean).join(" / ") || "-"}
                       </td>
                       <td className="py-3 text-slate-300">{student.category ?? "-"}</td>
-                      <td className="py-3 text-slate-300">{student.studentPhone ?? "-"}</td>
+                      <td className="py-3 text-slate-300">{student.primaryPosition ?? "-"}</td>
                       <td className="py-3 text-slate-300">
                         {new Intl.DateTimeFormat("pt-BR").format(student.createdAt)}
                       </td>

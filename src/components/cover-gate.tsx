@@ -44,13 +44,6 @@ export function CoverGate({ children }: CoverGateProps) {
               </div>
 
               <div className="space-y-6">
-                <button
-                  type="button"
-                  onClick={enterSystem}
-                  className="absolute right-6 top-6 rounded-lg border border-slate-600 px-3 py-1 text-xs font-semibold text-slate-200 transition hover:border-orange-300 hover:text-orange-200"
-                >
-                  Fechar capa
-                </button>
                 <p className="text-sm uppercase tracking-[0.4em] text-orange-300">R Sports</p>
                 <h1 className="max-w-2xl text-4xl font-black leading-tight text-white sm:text-5xl lg:text-6xl">
                   Gestão da Escolinha em ritmo de jogo
@@ -76,10 +69,6 @@ export function CoverGate({ children }: CoverGateProps) {
                     Pular capa
                   </button>
                 </div>
-
-                <p className="text-xs text-slate-400">
-                  Logo oficial: salve o arquivo em public/uploads/logo-rsports.png.
-                </p>
               </div>
             </div>
           </div>

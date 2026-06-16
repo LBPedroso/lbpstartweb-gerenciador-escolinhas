@@ -114,8 +114,13 @@ export async function createExpenseAction(formData: FormData) {
 
   const paymentDate = status === ExpenseStatus.PAGO ? parseDate(paymentDateRaw) : null;
   const expensePaymentMethod = parseExpensePaymentMethod(paymentMethodRaw);
-  const installments = parsePositiveInt(installmentsRaw);
+  let installments = parsePositiveInt(installmentsRaw);
   const installmentNumber = parsePositiveInt(installmentNumberRaw);
+
+  // Se marcou recorrente mas não preencheu parcelas, usa 12 meses
+  if (recurring && !installments) {
+    installments = 12;
+  }
 
   if (installmentNumber && !installments) {
     errors.push("Para informar número da parcela, preencha também o total de parcelas.");
@@ -251,7 +256,26 @@ export async function deleteExpenseAction(formData: FormData) {
 
   if (!expenseId) redirect("/despesas");
 
-  await prisma.expense.delete({ where: { id: expenseId } });
+  // Busca a despesa para ver se é parte de um grupo
+  const expense = await prisma.expense.findUnique({ where: { id: expenseId } });
+  if (!expense) redirect("/despesas");
+
+  // Se é parte de um grupo de parcelas (installments > 1), deleta todas
+  if (expense.installments && expense.installments > 1) {
+    await prisma.expense.deleteMany({
+      where: {
+        description: expense.description,
+        category: expense.category,
+        installments: expense.installments,
+        dueDate: {
+          gte: new Date(expense.dueDate.getFullYear(), expense.dueDate.getMonth(), 1),
+        },
+      },
+    });
+  } else {
+    // Senão, deleta apenas essa
+    await prisma.expense.delete({ where: { id: expenseId } });
+  }
 
   revalidateAll();
   const statusParam = status ? `&status=${encodeURIComponent(status)}` : "";

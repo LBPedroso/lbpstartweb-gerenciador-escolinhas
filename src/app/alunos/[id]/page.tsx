@@ -152,6 +152,7 @@ export default async function StudentProfilePage({ params, searchParams }: Stude
 
   const age = calculateAge(student.birthDate);
   const studentPhotoUrl = student.photoUrl?.trim();
+  const studentPhone = student.studentPhone?.trim();
 
   return (
     <main className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100 sm:px-6 lg:px-10">
@@ -210,10 +211,13 @@ export default async function StudentProfilePage({ params, searchParams }: Stude
                 <span className="text-slate-400">Nascimento:</span> {toDate(student.birthDate)}
               </p>
               <p>
+                <span className="text-slate-400">Cadastro:</span> {toDate(student.createdAt)}
+              </p>
+              <p>
                 <span className="text-slate-400">CPF:</span> {student.cpf ?? "-"}
               </p>
               <p>
-                <span className="text-slate-400">Telefone:</span> {student.studentPhone ?? "-"}
+                <span className="text-slate-400">Telefone:</span> {studentPhone || "Não informado"}
               </p>
               <p>
                 <span className="text-slate-400">Categoria:</span> {student.category ?? "-"}

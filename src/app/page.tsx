@@ -423,7 +423,7 @@ export default async function Home({ searchParams }: HomeProps) {
                 href="/?capa=1"
                 className="rounded-xl border border-orange-400/40 bg-orange-500/10 px-4 py-2 text-orange-200 transition hover:border-orange-300 hover:bg-orange-500/20"
               >
-                Ver capa
+                Inicio
               </Link>
               <Link
                 href="/"
